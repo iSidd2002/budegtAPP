@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatINR } from '@/lib/currency';
 
 interface AddExpenseFormProps {
@@ -16,6 +16,12 @@ const PREDEFINED_CATEGORIES = [
   'Shopping',
 ];
 
+interface AISuggestion {
+  category: string;
+  confidence: 'high' | 'medium' | 'low';
+  reasoning: string;
+}
+
 export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food');
@@ -26,6 +32,58 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
   const [recurringFrequency, setRecurringFrequency] = useState('monthly');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<AISuggestion | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Get AI category suggestion when note changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (note.trim().length > 3 && amount) {
+        getAISuggestion();
+      } else {
+        setAiSuggestion(null);
+      }
+    }, 800); // Debounce 800ms
+
+    return () => clearTimeout(timer);
+  }, [note, amount]);
+
+  const getAISuggestion = async () => {
+    if (!note.trim() || !amount) return;
+
+    setAiLoading(true);
+    try {
+      const response = await fetch('/api/ai/suggest-category', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          description: note,
+          amount: parseFloat(amount),
+        }),
+      });
+
+      if (response.ok) {
+        const suggestion = await response.json();
+        if (suggestion.category) {
+          setAiSuggestion(suggestion);
+        }
+      }
+    } catch (err) {
+      console.error('Error getting AI suggestion:', err);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const acceptAISuggestion = () => {
+    if (aiSuggestion) {
+      setCategory(aiSuggestion.category);
+      setCustomCategory('');
+      setAiSuggestion(null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +137,7 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
       setDate(new Date().toISOString().split('T')[0]);
       setNote('');
       setIsRecurring(false);
+      setAiSuggestion(null);
 
       onSuccess?.();
     } catch (err) {
@@ -177,7 +236,7 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Note (optional)
+          Note (optional) {aiLoading && <span className="text-xs text-blue-500">🤖 AI analyzing...</span>}
         </label>
         <textarea
           value={note}
@@ -185,9 +244,34 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
           maxLength={500}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
           rows={3}
-          placeholder="Add a note..."
+          placeholder="Add a note... (AI will suggest category)"
         />
       </div>
+
+      {aiSuggestion && (
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                🤖 AI Suggestion
+              </p>
+              <p className="text-sm text-blue-800 dark:text-blue-400 mt-1">
+                Category: <span className="font-semibold">{aiSuggestion.category}</span>
+                {aiSuggestion.confidence === 'high' && <span className="ml-2 text-xs bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-2 py-1 rounded">High confidence</span>}
+                {aiSuggestion.confidence === 'medium' && <span className="ml-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded">Medium confidence</span>}
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">{aiSuggestion.reasoning}</p>
+            </div>
+            <button
+              type="button"
+              onClick={acceptAISuggestion}
+              className="ml-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded font-medium transition"
+            >
+              Accept
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <input

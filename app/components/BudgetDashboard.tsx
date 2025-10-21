@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { formatINR } from '@/lib/currency';
 import ThemeToggle from './ThemeToggle';
+import AIInsights from './AIInsights';
 
 interface BudgetData {
   budget: { amount: number } | null;
@@ -221,6 +222,13 @@ export default function BudgetDashboard() {
                 </div>
               ))}
           </div>
+        </div>
+      )}
+
+      {/* AI Insights */}
+      {data && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+          <AIInsights month={month} year={year} />
         </div>
       )}
 
