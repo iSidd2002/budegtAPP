@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  email                 String    @unique
+  passwordHash          String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  budgets               Budget[]
+  expenses              Expense[]
+  sessions              Session[]
+  auditLogs             AuditLog[]
+}
+
+model Session {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  refreshToken          String    @unique
+  refreshTokenHash      String
+  expiresAt             DateTime
+  revokedAt             DateTime?
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Budget {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount                Float
+  month                 Int       // 1-12
+  year                  Int
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@unique([userId, month, year])
+  @@index([userId])
+}
+
+model Expense {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  amount                Float
+  category              String    // e.g., "food", "transport", "utilities"
+  date                  DateTime
+  note                  String?
+  
+  isRecurring           Boolean   @default(false)
+  recurringFrequency    String?   // "daily", "weekly", "monthly", "yearly"
+  recurringEndDate      DateTime?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([date])
+  @@index([category])
+}
+
+model AuditLog {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action                String    // "LOGIN", "LOGOUT", "EXPENSE_CREATE", "EXPENSE_UPDATE", "EXPENSE_DELETE", "BUDGET_SET"
+  resourceType          String?   // "expense", "budget", "auth"
+  resourceId            String?
+  details               String?   // JSON stringified details
+  ipAddress             String?
+  userAgent             String?
+  
+  createdAt             DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
