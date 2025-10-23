@@ -67,37 +67,39 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 shadow dark:shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Budget App</h1>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => handleExport('csv')}
-              disabled={exporting}
-              className="px-3 py-2 text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition"
-            >
-              Export CSV
-            </button>
-            <button
-              onClick={() => handleExport('json')}
-              disabled={exporting}
-              className="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition"
-            >
-              Export JSON
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-3 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
-            >
-              Logout
-            </button>
+      <header className="bg-white dark:bg-gray-900 shadow dark:shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Budget App</h1>
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
+              >
+                CSV
+              </button>
+              <button
+                onClick={() => handleExport('json')}
+                disabled={exporting}
+                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
+              >
+                JSON
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column: Add Expense */}
           <div className="lg:col-span-1">
             <AddExpenseForm onSuccess={() => setRefreshKey((k) => k + 1)} />
