@@ -1,11 +1,16 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import ThemeProvider from './components/ThemeProvider';
 
 export const metadata: Metadata = {
   title: 'Budget App - Mobile-First Budgeting',
   description: 'Secure, mobile-first budgeting application with expense tracking and analytics',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
