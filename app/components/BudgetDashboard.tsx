@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { formatINR } from '@/lib/currency';
 import ThemeToggle from './ThemeToggle';
+import AIInsights from './AIInsights';
+import AIAlerts from './AIAlerts';
 
 interface BudgetData {
   budget: { amount: number } | null;
@@ -32,6 +34,36 @@ export default function BudgetDashboard() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [budgetAmount, setBudgetAmount] = useState('');
   const [settingBudget, setSettingBudget] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<{
+    suggestedAmount: number;
+    reasoning: string;
+  } | null>(null);
+  const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+
+  const fetchAIRecommendation = async () => {
+    setLoadingRecommendation(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+
+      const response = await fetch(
+        `/api/ai/budget-recommendation?month=${month}&year=${year}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        }
+      );
+
+      if (response.ok) {
+        const recommendation = await response.json();
+        setAiRecommendation(recommendation);
+      }
+    } catch (error) {
+      console.error('Error fetching AI recommendation:', error);
+    } finally {
+      setLoadingRecommendation(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -49,6 +81,11 @@ export default function BudgetDashboard() {
       if (!response.ok) throw new Error('Failed to fetch budget data');
       const result = await response.json();
       setData(result);
+
+      // Fetch AI recommendation if no budget is set
+      if (!result.budget) {
+        fetchAIRecommendation();
+      }
     } catch (err) {
       setError('Failed to load budget data');
       console.error(err);
@@ -139,6 +176,9 @@ export default function BudgetDashboard() {
         </select>
       </div>
 
+      {/* AI Alerts */}
+      <AIAlerts month={month} year={year} />
+
       {/* Budget Summary Card */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
         <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Budget Summary</h2>
@@ -186,26 +226,61 @@ export default function BudgetDashboard() {
             </form>
           </>
         ) : (
-          <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
-            <input
-              type="number"
-              step="0.01"
-              value={budgetAmount}
-              onChange={(e) => setBudgetAmount(e.target.value)}
-              placeholder="Set monthly budget"
-              className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
-              required
-            />
-            <button
-              type="submit"
-              disabled={settingBudget}
-              className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
-            >
-              Set
-            </button>
-          </form>
+          <>
+            {aiRecommendation && !loadingRecommendation && (
+              <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <span className="text-lg">🤖</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-1">
+                      AI Recommendation: {formatINR(aiRecommendation.suggestedAmount)}
+                    </p>
+                    <p className="text-xs text-indigo-700 dark:text-indigo-300">
+                      {aiRecommendation.reasoning}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setBudgetAmount(String(aiRecommendation.suggestedAmount))}
+                      className="mt-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg transition"
+                    >
+                      Use This Amount
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            {loadingRecommendation && (
+              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex items-center space-x-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  Getting AI recommendation...
+                </span>
+              </div>
+            )}
+            <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="number"
+                step="0.01"
+                value={budgetAmount}
+                onChange={(e) => setBudgetAmount(e.target.value)}
+                placeholder="Set monthly budget"
+                className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
+                required
+              />
+              <button
+                type="submit"
+                disabled={settingBudget}
+                className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
+              >
+                Set
+              </button>
+            </form>
+          </>
         )}
       </div>
+
+      {/* AI Insights */}
+      <AIInsights />
 
       {/* Category Breakdown */}
       {Object.keys(categoryBreakdown).length > 0 && (
