@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { storage } from '@/lib/storage';
 
 interface AIAlertsProps {
   month: number;
@@ -19,7 +20,7 @@ export default function AIAlerts({ month, year }: AIAlertsProps) {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (!token) return;
 
       const response = await fetch(

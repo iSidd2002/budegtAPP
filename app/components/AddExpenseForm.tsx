@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { formatINR } from '@/lib/currency';
+import { storage } from '@/lib/storage';
 
 interface AddExpenseFormProps {
   onSuccess?: () => void;
@@ -84,7 +85,7 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (!token) {
         setError('Not authenticated');
         return;

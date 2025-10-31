@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { storage } from '@/lib/storage';
 import ThemeToggle from './ThemeToggle';
 import PWAInstallButton from './PWAInstallButton';
 
@@ -34,10 +35,10 @@ export default function LoginForm() {
         return;
       }
 
-      // Store access token and refresh token for PWA compatibility
-      localStorage.setItem('accessToken', data.accessToken);
+      // Store access token and refresh token for PWA compatibility (IndexedDB + localStorage)
+      await storage.setItem('accessToken', data.accessToken);
       if (data.refreshToken) {
-        localStorage.setItem('refreshToken', data.refreshToken);
+        await storage.setItem('refreshToken', data.refreshToken);
       }
       router.push('/dashboard');
     } catch (err) {

@@ -5,6 +5,7 @@ import { formatINR } from '@/lib/currency';
 import ThemeToggle from './ThemeToggle';
 import AIInsights from './AIInsights';
 import AIAlerts from './AIAlerts';
+import { storage } from '@/lib/storage';
 
 interface BudgetData {
   budget: { amount: number } | null;
@@ -48,7 +49,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
   const fetchAIRecommendation = async () => {
     setLoadingRecommendation(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (!token) return;
 
       const response = await fetch(
@@ -72,7 +73,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (!token) return;
 
       const response = await fetch(
@@ -108,7 +109,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
     setSettingBudget(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       const response = await fetch('/api/budget', {
         method: 'POST',
         headers: {
@@ -156,7 +157,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
     setResettingBudget(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       const response = await fetch('/api/budget/reset', {
         method: 'POST',
         headers: {

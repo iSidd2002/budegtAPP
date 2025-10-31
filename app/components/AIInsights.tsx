@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { storage } from '@/lib/storage';
 
 export default function AIInsights() {
   const [insights, setInsights] = useState<string[]>([]);
@@ -16,7 +17,7 @@ export default function AIInsights() {
     setError('');
 
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (!token) {
         setError('Not authenticated');
         return;

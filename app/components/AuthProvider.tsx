@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { storage } from '@/lib/storage';
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -11,11 +12,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     // Function to refresh access token
     const refreshAccessToken = async () => {
       try {
-        // Get refresh token from localStorage (fallback for PWA)
-        const refreshToken = localStorage.getItem('refreshToken');
+        // Get refresh token from persistent storage (IndexedDB + localStorage for PWA)
+        const refreshToken = await storage.getItem('refreshToken');
 
         console.log('[AuthProvider] Attempting token refresh...');
-        console.log('[AuthProvider] Has refreshToken in localStorage:', !!refreshToken);
+        console.log('[AuthProvider] Has refreshToken in storage:', !!refreshToken);
         console.log('[AuthProvider] RefreshToken length:', refreshToken?.length || 0);
 
         const response = await fetch('/api/auth/refresh', {
@@ -31,11 +32,11 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
         if (response.ok) {
           const data = await response.json();
-          localStorage.setItem('accessToken', data.accessToken);
-          // Store refresh token in localStorage for PWA compatibility
+          await storage.setItem('accessToken', data.accessToken);
+          // Store refresh token in persistent storage for PWA compatibility
           if (data.refreshToken) {
-            localStorage.setItem('refreshToken', data.refreshToken);
-            console.log('[AuthProvider] New refreshToken stored in localStorage');
+            await storage.setItem('refreshToken', data.refreshToken);
+            console.log('[AuthProvider] New refreshToken stored in persistent storage');
           }
           console.log('[AuthProvider] Token refreshed successfully');
           return true;
@@ -43,8 +44,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           console.log('[AuthProvider] Token refresh failed:', errorData);
           // Clear tokens on failure
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
+          await storage.removeItem('accessToken');
+          await storage.removeItem('refreshToken');
           return false;
         }
       } catch (error) {
@@ -77,7 +78,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       console.log('[AuthProvider] Checking auth on pathname:', pathname);
       console.log('[AuthProvider] Has access token:', !!token);
 
@@ -115,7 +116,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     // Set up automatic token refresh every 10 minutes
     const refreshInterval = setInterval(async () => {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       if (token && pathname !== '/') {
         console.log('[AuthProvider] Auto-refreshing token...');
         await refreshAccessToken();

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AddExpenseForm from '../components/AddExpenseForm';
 import BudgetDashboard from '../components/BudgetDashboard';
 import PWAInstallButton from '../components/PWAInstallButton';
+import { storage } from '@/lib/storage';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ export default function Dashboard() {
       // Wait a bit for AuthProvider to potentially refresh the token
       await new Promise(resolve => setTimeout(resolve, 500));
 
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       console.log('[Dashboard] Checking auth, has token:', !!token);
 
       if (!token) {
@@ -36,7 +37,7 @@ export default function Dashboard() {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -45,8 +46,8 @@ export default function Dashboard() {
     } catch (err) {
       console.error(err);
     } finally {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken'); // Also clear refresh token
+      await storage.removeItem('accessToken');
+      await storage.removeItem('refreshToken'); // Also clear refresh token
       router.push('/');
     }
   };
@@ -54,7 +55,7 @@ export default function Dashboard() {
   const handleExport = async (format: 'csv' | 'json') => {
     setExporting(true);
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = await storage.getItem('accessToken');
       const response = await fetch(`/api/analytics/export?format=${format}`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
