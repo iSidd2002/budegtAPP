@@ -34,6 +34,7 @@ export default function BudgetDashboard() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [budgetAmount, setBudgetAmount] = useState('');
   const [settingBudget, setSettingBudget] = useState(false);
+  const [resettingBudget, setResettingBudget] = useState(false);
   const [aiRecommendation, setAiRecommendation] = useState<{
     suggestedAmount: number;
     reasoning: string;
@@ -129,6 +130,40 @@ export default function BudgetDashboard() {
     }
   };
 
+  const handleResetBudget = async () => {
+    if (!confirm('Are you sure you want to reset your budget to ₹0? This action cannot be undone.')) {
+      return;
+    }
+
+    setResettingBudget(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch('/api/budget', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: 0,
+          month,
+          year,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to reset budget');
+      setBudgetAmount('');
+      fetchData();
+    } catch (err) {
+      setError('Failed to reset budget');
+      console.error(err);
+    } finally {
+      setResettingBudget(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</div>;
   }
@@ -207,23 +242,34 @@ export default function BudgetDashboard() {
               </p>
             </div>
 
-            <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="number"
-                step="0.01"
-                value={budgetAmount}
-                onChange={(e) => setBudgetAmount(e.target.value)}
-                placeholder="Update budget"
-                className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
-              />
+            <div className="space-y-2">
+              <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={budgetAmount}
+                  onChange={(e) => setBudgetAmount(e.target.value)}
+                  placeholder="Update budget"
+                  className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
+                />
+                <button
+                  type="submit"
+                  disabled={settingBudget || !budgetAmount}
+                  className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
+                >
+                  Update
+                </button>
+              </form>
+
               <button
-                type="submit"
-                disabled={settingBudget || !budgetAmount}
-                className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
+                type="button"
+                onClick={handleResetBudget}
+                disabled={resettingBudget}
+                className="w-full px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto transition"
               >
-                Update
+                {resettingBudget ? 'Resetting...' : 'Reset Budget to ₹0'}
               </button>
-            </form>
+            </div>
           </>
         ) : (
           <>
