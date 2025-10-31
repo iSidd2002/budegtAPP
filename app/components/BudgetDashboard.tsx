@@ -131,7 +131,21 @@ export default function BudgetDashboard() {
   };
 
   const handleResetBudget = async () => {
-    if (!confirm('Are you sure you want to reset your budget to ₹0? This action cannot be undone.')) {
+    const deleteExpenses = confirm(
+      '⚠️ RESET BUDGET\n\n' +
+      'Do you want to DELETE ALL EXPENSES for this month along with resetting the budget?\n\n' +
+      '• Click OK to RESET BUDGET + DELETE ALL EXPENSES\n' +
+      '• Click Cancel to only RESET BUDGET (keep expenses)\n\n' +
+      'This action cannot be undone!'
+    );
+
+    const confirmReset = confirm(
+      deleteExpenses
+        ? '🗑️ FINAL CONFIRMATION\n\nYou are about to:\n• Reset budget to ₹0\n• DELETE ALL expenses for this month\n\nThis will permanently delete all your expense data!\n\nAre you absolutely sure?'
+        : '⚠️ CONFIRMATION\n\nYou are about to reset your budget to ₹0.\n\nYour expenses will remain but the budget will be cleared.\n\nContinue?'
+    );
+
+    if (!confirmReset) {
       return;
     }
 
@@ -139,21 +153,30 @@ export default function BudgetDashboard() {
 
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch('/api/budget', {
+      const response = await fetch('/api/budget/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: 0,
           month,
           year,
+          deleteExpenses,
         }),
         credentials: 'include',
       });
 
       if (!response.ok) throw new Error('Failed to reset budget');
+
+      const data = await response.json();
+
+      if (deleteExpenses && data.deletedExpenses > 0) {
+        alert(`✅ Success!\n\nBudget reset to ₹0\n${data.deletedExpenses} expense(s) deleted`);
+      } else {
+        alert('✅ Budget reset to ₹0');
+      }
+
       setBudgetAmount('');
       fetchData();
     } catch (err) {
@@ -266,8 +289,9 @@ export default function BudgetDashboard() {
                 onClick={handleResetBudget}
                 disabled={resettingBudget}
                 className="w-full px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto transition"
+                title="Reset budget and optionally delete all expenses for this month"
               >
-                {resettingBudget ? 'Resetting...' : 'Reset Budget to ₹0'}
+                {resettingBudget ? 'Resetting...' : '🗑️ Reset Budget & Clear Data'}
               </button>
             </div>
           </>

@@ -64,7 +64,7 @@ export function setSecureCookie<T extends NextResponse>(
   const cookieOptions = {
     httpOnly: options.httpOnly !== false,
     secure: process.env.NODE_ENV === 'production' || options.secure !== false,
-    sameSite: options.sameSite || 'Strict',
+    sameSite: options.sameSite || 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
     maxAge: options.maxAge || 7 * 24 * 60 * 60, // 7 days
     path: '/',
   };

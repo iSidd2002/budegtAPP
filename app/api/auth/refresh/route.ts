@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     response = setSecureCookie(response, 'refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
+      sameSite: 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
       maxAge: 7 * 24 * 60 * 60,
     });
 

@@ -3,6 +3,7 @@ import './globals.css';
 import ThemeProvider from './components/ThemeProvider';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import AuthProvider from './components/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'Budget App - Smart Expense Tracker',
@@ -63,8 +64,10 @@ export default function RootLayout({
       <body className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-50 transition-colors">
         <ServiceWorkerRegistration />
         <ThemeProvider>
-          {children}
-          <PWAInstallPrompt />
+          <AuthProvider>
+            {children}
+            <PWAInstallPrompt />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
