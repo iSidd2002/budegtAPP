@@ -57,14 +57,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     // Function to verify if access token is valid
     const verifyToken = async (token: string): Promise<boolean> => {
       try {
-        // Make a test API call to verify token is valid
-        const response = await fetch('/api/budget?month=1&year=2025', {
+        // Use dedicated verify endpoint for cleaner token validation
+        const response = await fetch('/api/auth/verify', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
           credentials: 'include',
         });
-        return response.ok;
+
+        if (response.ok) {
+          const data = await response.json();
+          return data.valid === true;
+        }
+        return false;
       } catch {
         return false;
       }
