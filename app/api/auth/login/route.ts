@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
         success: true,
         user: { id: user.id, email: user.email },
         accessToken,
+        refreshToken, // Send refresh token in response for localStorage storage (PWA compatibility)
       },
       { status: 200 }
     );

@@ -34,8 +34,11 @@ export default function LoginForm() {
         return;
       }
 
-      // Store access token
+      // Store access token and refresh token for PWA compatibility
       localStorage.setItem('accessToken', data.accessToken);
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
       router.push('/dashboard');
     } catch (err) {
       setError('Network error. Please try again.');

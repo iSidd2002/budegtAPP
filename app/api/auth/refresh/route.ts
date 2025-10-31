@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         accessToken,
+        refreshToken: newRefreshToken, // Send new refresh token in response for localStorage storage (PWA compatibility)
       },
       { status: 200 }
     );
