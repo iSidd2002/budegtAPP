@@ -14,6 +14,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         // Get refresh token from localStorage (fallback for PWA)
         const refreshToken = localStorage.getItem('refreshToken');
 
+        console.log('[AuthProvider] Attempting token refresh...');
+        console.log('[AuthProvider] Has refreshToken in localStorage:', !!refreshToken);
+        console.log('[AuthProvider] RefreshToken length:', refreshToken?.length || 0);
+
         const response = await fetch('/api/auth/refresh', {
           method: 'POST',
           credentials: 'include',
@@ -23,17 +27,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           body: JSON.stringify({ refreshToken }), // Send refresh token in body as fallback
         });
 
+        console.log('[AuthProvider] Refresh response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
           localStorage.setItem('accessToken', data.accessToken);
           // Store refresh token in localStorage for PWA compatibility
           if (data.refreshToken) {
             localStorage.setItem('refreshToken', data.refreshToken);
+            console.log('[AuthProvider] New refreshToken stored in localStorage');
           }
           console.log('[AuthProvider] Token refreshed successfully');
           return true;
         } else {
-          console.log('[AuthProvider] Token refresh failed');
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.log('[AuthProvider] Token refresh failed:', errorData);
           // Clear tokens on failure
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
@@ -45,14 +53,33 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     };
 
+    // Function to verify if access token is valid
+    const verifyToken = async (token: string): Promise<boolean> => {
+      try {
+        // Make a test API call to verify token is valid
+        const response = await fetch('/api/budget?month=1&year=2025', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+        return response.ok;
+      } catch {
+        return false;
+      }
+    };
+
     // Function to check if user is authenticated
     const checkAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-
       // If on login page, no need to check auth
       if (pathname === '/') {
+        console.log('[AuthProvider] On login page, skipping auth check');
         return;
       }
+
+      const token = localStorage.getItem('accessToken');
+      console.log('[AuthProvider] Checking auth on pathname:', pathname);
+      console.log('[AuthProvider] Has access token:', !!token);
 
       // If no token, try to refresh
       if (!token) {
@@ -63,6 +90,23 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           console.log('[AuthProvider] Refresh failed, redirecting to login');
           router.push('/');
         }
+        return;
+      }
+
+      // If token exists, verify it's still valid
+      console.log('[AuthProvider] Verifying access token...');
+      const isValid = await verifyToken(token);
+
+      if (!isValid) {
+        console.log('[AuthProvider] Access token invalid/expired, attempting refresh...');
+        const refreshed = await refreshAccessToken();
+
+        if (!refreshed) {
+          console.log('[AuthProvider] Refresh failed, redirecting to login');
+          router.push('/');
+        }
+      } else {
+        console.log('[AuthProvider] Access token is valid');
       }
     };
 

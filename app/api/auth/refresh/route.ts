@@ -14,7 +14,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => ({}));
     const refreshToken = refreshTokenFromCookie || body.refreshToken;
 
+    console.log('[Refresh API] Has cookie refreshToken:', !!refreshTokenFromCookie);
+    console.log('[Refresh API] Has body refreshToken:', !!body.refreshToken);
+    console.log('[Refresh API] Using refreshToken from:', refreshTokenFromCookie ? 'cookie' : 'body');
+
     if (!refreshToken) {
+      console.log('[Refresh API] No refresh token provided');
       return NextResponse.json(
         { error: 'Refresh token is required' },
         { status: 401 }
@@ -27,7 +32,14 @@ export async function POST(request: NextRequest) {
       include: { user: true },
     });
 
+    console.log('[Refresh API] Session found:', !!session);
+    if (session) {
+      console.log('[Refresh API] Session revoked:', !!session.revokedAt);
+      console.log('[Refresh API] Session expired:', session.expiresAt < new Date());
+    }
+
     if (!session || session.revokedAt || session.expiresAt < new Date()) {
+      console.log('[Refresh API] Session invalid or expired');
       return NextResponse.json(
         { error: 'Invalid or expired refresh token' },
         { status: 401 }

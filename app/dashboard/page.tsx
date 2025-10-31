@@ -15,10 +15,23 @@ export default function Dashboard() {
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      router.push('/');
-    }
+    // Give AuthProvider time to refresh token before checking
+    const checkAuth = async () => {
+      // Wait a bit for AuthProvider to potentially refresh the token
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const token = localStorage.getItem('accessToken');
+      console.log('[Dashboard] Checking auth, has token:', !!token);
+
+      if (!token) {
+        console.log('[Dashboard] No token found, redirecting to login');
+        router.push('/');
+      } else {
+        console.log('[Dashboard] Token found, staying on dashboard');
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   const handleLogout = async () => {
@@ -33,6 +46,7 @@ export default function Dashboard() {
       console.error(err);
     } finally {
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken'); // Also clear refresh token
       router.push('/');
     }
   };
