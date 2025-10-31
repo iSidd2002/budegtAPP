@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AddExpenseForm from '../components/AddExpenseForm';
 import BudgetDashboard from '../components/BudgetDashboard';
+import PWAInstallButton from '../components/PWAInstallButton';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';
@@ -111,6 +112,9 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+
+      {/* PWA Install Button - Floating */}
+      <PWAInstallButton />
     </div>
   );
 }

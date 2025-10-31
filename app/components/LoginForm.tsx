@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import PWAInstallButton from './PWAInstallButton';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -116,6 +117,9 @@ export default function LoginForm() {
           </button>
         </div>
       </div>
+
+      {/* PWA Install Button - Floating */}
+      <PWAInstallButton />
     </div>
   );
 }
