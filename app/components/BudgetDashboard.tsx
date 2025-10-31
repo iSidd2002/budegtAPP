@@ -26,7 +26,11 @@ interface BudgetData {
   }>;
 }
 
-export default function BudgetDashboard() {
+interface BudgetDashboardProps {
+  onResetSuccess?: () => void;
+}
+
+export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps = {}) {
   const [data, setData] = useState<BudgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -178,7 +182,14 @@ export default function BudgetDashboard() {
       }
 
       setBudgetAmount('');
-      fetchData();
+
+      // Trigger parent component refresh to reload all data
+      if (onResetSuccess) {
+        onResetSuccess();
+      } else {
+        // Fallback: just fetch data if no callback provided
+        fetchData();
+      }
     } catch (err) {
       setError('Failed to reset budget');
       console.error(err);

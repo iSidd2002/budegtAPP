@@ -122,7 +122,10 @@ export default function Dashboard() {
 
           {/* Right Column: Dashboard */}
           <div className="lg:col-span-2">
-            <BudgetDashboard key={refreshKey} />
+            <BudgetDashboard
+              key={refreshKey}
+              onResetSuccess={() => setRefreshKey((k) => k + 1)}
+            />
           </div>
         </div>
       </main>
