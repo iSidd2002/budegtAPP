@@ -3,8 +3,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Get the Gemini Pro model
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+// Get the Gemini 2.5 Flash model (stable version)
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // Common expense categories
 export const EXPENSE_CATEGORIES = [
@@ -21,6 +21,12 @@ export const EXPENSE_CATEGORIES = [
   'Subscriptions',
   'Other',
 ];
+
+// Helper function to strip markdown code blocks from AI responses
+function stripMarkdown(text: string): string {
+  // Remove ```json and ``` markers
+  return text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+}
 
 /**
  * Suggest expense category based on description
@@ -96,7 +102,7 @@ Respond with ONLY the JSON array, no other text.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text().trim();
+    const text = stripMarkdown(response.text());
 
     // Parse JSON response
     const insights = JSON.parse(text);
@@ -146,7 +152,7 @@ Respond with ONLY the JSON object, no other text.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text().trim();
+    const text = stripMarkdown(response.text());
 
     const suggestion = JSON.parse(text);
     return {
@@ -196,7 +202,7 @@ Respond with ONLY the JSON array, no other text.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text().trim();
+    const text = stripMarkdown(response.text());
 
     const alerts = JSON.parse(text);
     return Array.isArray(alerts) ? alerts : [];
