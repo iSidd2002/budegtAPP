@@ -1,21 +1,44 @@
 // Service Worker for Budget App PWA
-const CACHE_NAME = 'budget-app-v1';
+const CACHE_NAME = 'budget-app-v3';
 const OFFLINE_URL = '/offline.html';
 
-// Assets to cache on install
+// Only pre-cache the minimal static assets needed for offline UX
 const STATIC_ASSETS = [
-  '/',
-  '/dashboard',
   '/offline.html',
   '/manifest.json',
 ];
+
+function shouldCache(request) {
+  try {
+    const url = new URL(request.url);
+    // Only cache same-origin requests
+    if (url.origin !== self.location.origin) return false;
+
+    // Never cache API requests or auth endpoints
+    if (url.pathname.startsWith('/api/')) return false;
+
+    // Avoid caching dev hot-update assets
+    if (url.pathname.startsWith('/_next/static/webpack')) return false;
+
+    // Cache hashed build assets/icon/manifest/offline only
+    if (url.pathname.startsWith('/_next/')) return true; // hashed, safe to cache
+    if (url.pathname.startsWith('/icons/')) return true;
+    if (url.pathname === '/manifest.json') return true;
+    if (url.pathname === '/offline.html') return true;
+
+    // Do NOT cache app pages like '/' or '/dashboard' to avoid auth staleness
+    return false;
+  } catch {
+    return false;
+  }
+}
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
   console.log('[Service Worker] Installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching static assets');
+      console.log('[Service Worker] Pre-caching minimal assets');
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.error('[Service Worker] Cache addAll error:', err);
       });
@@ -49,7 +72,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip chrome extensions and other non-http(s) requests
+  // Skip non-http(s) requests (extensions, etc.)
   if (!event.request.url.startsWith('http')) {
     return;
   }
@@ -57,38 +80,32 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response before caching
-        const responseToCache = response.clone();
-        
-        // Cache successful responses
-        if (response.status === 200) {
+        // Cache successful responses only when we explicitly allow it
+        if (response.status === 200 && shouldCache(event.request)) {
+          const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
           });
         }
-        
         return response;
       })
-      .catch(() => {
+      .catch(async () => {
         // Network failed, try cache
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          
-          // If requesting a page and not in cache, show offline page
-          if (event.request.mode === 'navigate') {
-            return caches.match(OFFLINE_URL);
-          }
-          
-          // For other requests, return a basic response
-          return new Response('Offline - content not available', {
-            status: 503,
-            statusText: 'Service Unavailable',
-            headers: new Headers({
-              'Content-Type': 'text/plain',
-            }),
-          });
+        const cache = await caches.open(CACHE_NAME);
+        const cachedResponse = await cache.match(event.request);
+        if (cachedResponse) return cachedResponse;
+
+        // If requesting a page and not in cache, show offline page
+        if (event.request.mode === 'navigate') {
+          const offline = await cache.match(OFFLINE_URL);
+          if (offline) return offline;
+        }
+
+        // For other requests, return a basic response
+        return new Response('Offline - content not available', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: new Headers({ 'Content-Type': 'text/plain' }),
         });
       })
   );
@@ -100,4 +117,3 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
-

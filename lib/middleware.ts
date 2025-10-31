@@ -59,15 +59,21 @@ export function setSecureCookie<T extends NextResponse>(
   response: T,
   name: string,
   value: string,
-  options: { httpOnly?: boolean; secure?: boolean; sameSite?: string; maxAge?: number } = {}
+  options: { httpOnly?: boolean; secure?: boolean; sameSite?: string; maxAge?: number; domain?: string } = {}
 ): T {
-  const cookieOptions = {
+  const cookieOptions: Record<string, any> = {
     httpOnly: options.httpOnly !== false,
     secure: process.env.NODE_ENV === 'production' || options.secure !== false,
     sameSite: options.sameSite || 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
     maxAge: options.maxAge || 7 * 24 * 60 * 60, // 7 days
     path: '/',
   };
+
+  // Allow overriding cookie domain via explicit option or environment variable
+  const domain = options.domain || process.env.COOKIE_DOMAIN;
+  if (domain) {
+    cookieOptions.domain = domain;
+  }
 
   response.cookies.set(name, value, cookieOptions as any);
   return response;
