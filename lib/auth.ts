@@ -47,7 +47,9 @@ export function verifyAccessToken(token: string): { userId: string; type: string
 
 export function generateSessionExpiry(): Date {
   const date = new Date();
-  date.setDate(date.getDate() + 7); // 7 days
+  // Extended to 90 days for iOS PWA compatibility
+  // iOS deletes local storage after 7 days, so we keep server session alive longer
+  date.setDate(date.getDate() + 90); // 90 days
   return date;
 }
 

@@ -70,6 +70,31 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     };
 
+    // Function to send keepalive ping to prevent iOS storage deletion
+    const sendKeepalive = async () => {
+      try {
+        const token = await storage.getItem('accessToken');
+        if (!token) return;
+
+        console.log('[AuthProvider] Sending keepalive ping...');
+        const response = await fetch('/api/auth/keepalive', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          console.log('[AuthProvider] Keepalive successful');
+        } else {
+          console.log('[AuthProvider] Keepalive failed:', response.status);
+        }
+      } catch (error) {
+        console.error('[AuthProvider] Keepalive error:', error);
+      }
+    };
+
     // Function to check if user is authenticated
     const checkAuth = async () => {
       // If on login page, no need to check auth
@@ -105,9 +130,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         if (!refreshed) {
           console.log('[AuthProvider] Refresh failed, redirecting to login');
           router.push('/');
+        } else {
+          // Send keepalive after successful refresh
+          await sendKeepalive();
         }
       } else {
         console.log('[AuthProvider] Access token is valid');
+        // Send keepalive to prevent iOS storage deletion
+        await sendKeepalive();
       }
     };
 
@@ -123,8 +153,22 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       }
     }, 10 * 60 * 1000); // 10 minutes
 
-    // Clean up interval on unmount
-    return () => clearInterval(refreshInterval);
+    // iOS PWA: Send keepalive when app comes back to foreground
+    // This is CRITICAL for preventing iOS from deleting storage
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && pathname !== '/') {
+        console.log('[AuthProvider] App became visible, sending keepalive...');
+        await sendKeepalive();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Clean up interval and event listener on unmount
+    return () => {
+      clearInterval(refreshInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [pathname, router]);
 
   return <>{children}</>;

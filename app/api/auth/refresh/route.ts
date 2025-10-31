@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
-      maxAge: 7 * 24 * 60 * 60,
+      maxAge: 90 * 24 * 60 * 60, // 90 days - extended for iOS PWA compatibility
     });
 
     // Add security headers
