@@ -213,86 +213,158 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
     : 0;
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-6">
       {/* Header with Theme Toggle */}
-      <div className="flex justify-between items-center gap-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+      <div className="flex justify-between items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        </div>
         <ThemeToggle />
       </div>
 
       {/* Month/Year Selector */}
-      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-        <select
-          value={month}
-          onChange={(e) => setMonth(parseInt(e.target.value))}
-          className="px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base sm:text-sm min-h-[44px] sm:min-h-auto"
-        >
-          {Array.from({ length: 12 }, (_, i) => (
-            <option key={i + 1} value={i + 1}>
-              {new Date(2024, i).toLocaleString('default', { month: 'long' })}
-            </option>
-          ))}
-        </select>
-        <select
-          value={year}
-          onChange={(e) => setYear(parseInt(e.target.value))}
-          className="px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base sm:text-sm min-h-[44px] sm:min-h-auto"
-        >
-          {Array.from({ length: 5 }, (_, i) => (
-            <option key={i} value={new Date().getFullYear() - 2 + i}>
-              {new Date().getFullYear() - 2 + i}
-            </option>
-          ))}
-        </select>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Select Period</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Month</label>
+            <select
+              value={month}
+              onChange={(e) => setMonth(parseInt(e.target.value))}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base font-medium min-h-[48px] appearance-none cursor-pointer transition-all duration-200"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 1rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+              }}
+            >
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(2024, i).toLocaleString('default', { month: 'long' })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Year</label>
+            <select
+              value={year}
+              onChange={(e) => setYear(parseInt(e.target.value))}
+              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base font-medium min-h-[48px] appearance-none cursor-pointer transition-all duration-200"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
+                backgroundPosition: 'right 1rem center',
+                backgroundRepeat: 'no-repeat',
+                backgroundSize: '1.5em 1.5em',
+              }}
+            >
+              {Array.from({ length: 5 }, (_, i) => (
+                <option key={i} value={new Date().getFullYear() - 2 + i}>
+                  {new Date().getFullYear() - 2 + i}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* AI Alerts */}
       <AIAlerts month={month} year={year} />
 
       {/* Budget Summary Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-        <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">Budget Summary</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+            </svg>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Budget Summary</h2>
+        </div>
 
         {summary.budgetAmount ? (
           <>
-            <div className="mb-4">
-              <div className="flex justify-between mb-2 gap-2">
-                <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">Spent</span>
-                <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white text-right">
-                  {formatINR(summary.totalSpent)} / {formatINR(summary.budgetAmount)}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-3">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Progress</span>
+                <span className="text-sm font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                  {percentageSpent}%
                 </span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                <div
-                  className={`h-3 rounded-full transition-all ${
-                    percentageSpent > 100 ? 'bg-red-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(percentageSpent, 100)}%` }}
-                />
+              <div className="space-y-2">
+                <div className="flex justify-between items-baseline">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    {formatINR(summary.totalSpent)}
+                  </span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    of {formatINR(summary.budgetAmount)}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <div
+                    className={`h-4 rounded-full transition-all duration-500 ${
+                      percentageSpent > 100
+                        ? 'bg-gradient-to-r from-red-500 to-red-600'
+                        : percentageSpent > 80
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                        : 'bg-gradient-to-r from-emerald-500 to-green-600'
+                    }`}
+                    style={{ width: `${Math.min(percentageSpent, 100)}%` }}
+                  />
+                </div>
+                <p className="text-sm font-medium text-center">
+                  {summary.remaining !== null && summary.remaining >= 0 ? (
+                    <span className="text-emerald-600 dark:text-emerald-400">
+                      {formatINR(summary.remaining)} remaining
+                    </span>
+                  ) : (
+                    <span className="text-red-600 dark:text-red-400">
+                      {formatINR(Math.abs(summary.remaining || 0))} over budget
+                    </span>
+                  )}
+                </p>
               </div>
-              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2">
-                {summary.remaining !== null && summary.remaining >= 0
-                  ? `${formatINR(summary.remaining)} remaining`
-                  : `${formatINR(Math.abs(summary.remaining || 0))} over budget`}
-              </p>
             </div>
 
-            <div className="space-y-2">
-              <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
-                <input
-                  type="number"
-                  step="0.01"
-                  value={budgetAmount}
-                  onChange={(e) => setBudgetAmount(e.target.value)}
-                  placeholder="Update budget"
-                  className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-xs sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
-                />
+            <div className="space-y-4">
+              <form onSubmit={handleSetBudget} className="space-y-3">
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={budgetAmount}
+                    onChange={(e) => setBudgetAmount(e.target.value)}
+                    placeholder="Update budget amount"
+                    className="w-full pl-8 pr-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={settingBudget || !budgetAmount}
-                  className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
+                  className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Update
+                  {settingBudget ? (
+                    <>
+                      <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                      Update Budget
+                    </>
+                  )}
                 </button>
               </form>
 
@@ -300,10 +372,24 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
                 type="button"
                 onClick={handleResetBudget}
                 disabled={resettingBudget}
-                className="w-full px-4 py-2.5 sm:py-2 bg-red-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto transition"
+                className="w-full px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Reset budget and optionally delete all expenses for this month"
               >
-                {resettingBudget ? 'Resetting...' : '🗑️ Reset Budget & Clear Data'}
+                {resettingBudget ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Reset Budget & Clear Data
+                  </>
+                )}
               </button>
             </div>
           </>

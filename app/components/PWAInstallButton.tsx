@@ -65,20 +65,20 @@ export default function PWAInstallButton() {
 
   return (
     <>
-      {/* Install Button - Always visible on mobile */}
+      {/* Install Button - Optimized for mobile */}
       <button
         onClick={handleInstallClick}
-        className="fixed bottom-20 right-4 z-40 group animate-float"
+        className="fixed bottom-6 right-4 z-40 group animate-float"
         aria-label="Install App"
       >
         {/* Pulsing ring animation */}
-        <div className="absolute -inset-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 opacity-75 group-hover:opacity-100 animate-pulse blur-sm"></div>
+        <div className="absolute -inset-3 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 opacity-75 group-hover:opacity-100 animate-pulse blur-sm"></div>
 
         {/* Main button */}
-        <div className="relative flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-110 animate-glow">
+        <div className="relative flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 animate-glow min-h-[56px]">
           {/* Icon */}
           <svg
-            className="w-5 h-5 animate-bounce"
+            className="w-6 h-6 animate-bounce"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -93,13 +93,13 @@ export default function PWAInstallButton() {
           </svg>
 
           {/* Text */}
-          <span className="font-bold text-sm whitespace-nowrap">
-            Install App
+          <span className="font-bold text-base whitespace-nowrap">
+            📱 Install App
           </span>
 
           {/* Sparkle effect */}
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-300 rounded-full"></div>
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-300 rounded-full"></div>
         </div>
       </button>
 

@@ -51,31 +51,46 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-950">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 shadow dark:shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Budget App</h1>
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <button
-                onClick={() => handleExport('csv')}
-                disabled={exporting}
-                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
-              >
-                CSV
-              </button>
-              <button
-                onClick={() => handleExport('json')}
-                disabled={exporting}
-                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
-              >
-                JSON
-              </button>
+      <header className="bg-white dark:bg-gray-900 shadow-sm dark:shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">💰 Budget App</h1>
+            </div>
+
+            {/* Action buttons - optimized for mobile */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleExport('csv')}
+                  disabled={exporting}
+                  className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  {exporting ? 'Exporting...' : 'CSV'}
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  disabled={exporting}
+                  className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  {exporting ? 'Exporting...' : 'JSON'}
+                </button>
+              </div>
               <button
                 onClick={handleLogout}
-                className="flex-1 sm:flex-none px-3 py-2 text-xs sm:text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition min-h-[44px] sm:min-h-auto flex items-center justify-center"
+                className="px-4 py-3 text-sm font-medium bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
               >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
                 Logout
               </button>
             </div>
@@ -84,15 +99,15 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 md:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Left Column: Add Expense */}
-          <div className="lg:col-span-1">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Mobile: Add Expense Form First */}
+          <div className="lg:col-span-1 order-1 lg:order-1">
             <AddExpenseForm onSuccess={() => setRefreshKey((k) => k + 1)} />
           </div>
 
-          {/* Right Column: Dashboard */}
-          <div className="lg:col-span-2">
+          {/* Mobile: Dashboard Second */}
+          <div className="lg:col-span-2 order-2 lg:order-2">
             <BudgetDashboard
               key={refreshKey}
               onResetSuccess={() => setRefreshKey((k) => k + 1)}
