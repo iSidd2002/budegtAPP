@@ -14,16 +14,39 @@ export default function ServiceWorkerRegistration() {
 
     // In development (unless explicitly enabled), actively unregister existing SW and clear caches
     if (!ENABLE_SW) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        regs.forEach((reg) => reg.unregister());
-      });
-      if ('caches' in window) {
-        caches.keys().then((keys) => {
-          keys
-            .filter((k) => k.startsWith('budget-app-'))
-            .forEach((k) => caches.delete(k));
-        });
-      }
+      (async () => {
+        let hadAny = false;
+        try {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          if (regs.length > 0) {
+            hadAny = true;
+            await Promise.allSettled(regs.map((r) => r.unregister()));
+          }
+        } catch (e) {
+          console.warn('[SW] Unregister error (dev):', e);
+        }
+        if ('caches' in window) {
+          try {
+            const keys = await caches.keys();
+            await Promise.allSettled(
+              keys
+                .filter((k) => k.startsWith('budget-app-'))
+                .map((k) => caches.delete(k))
+            );
+            if (keys.length > 0) hadAny = true;
+          } catch (e) {
+            console.warn('[SW] Cache cleanup error (dev):', e);
+          }
+        }
+        // If we removed a controlling SW or cache, force a one-time hard reload to drop any stale chunks
+        if (hadAny && !sessionStorage.getItem('__sw_dev_cleared')) {
+          sessionStorage.setItem('__sw_dev_cleared', '1');
+          // Add a query to avoid bfcache and ensure new assets
+          const url = new URL(window.location.href);
+          url.searchParams.set('no-sw', Date.now().toString());
+          window.location.replace(url.toString());
+        }
+      })();
       return;
     }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useAuth } from '@/app/components/AuthProvider';
 import AddExpenseForm from '../components/AddExpenseForm';
 import BudgetDashboard from '../components/BudgetDashboard';
 import PWAInstallButton from '../components/PWAInstallButton';
@@ -11,45 +11,15 @@ import { storage } from '@/lib/storage';
 export const dynamic = 'force-dynamic';
 
 export default function Dashboard() {
-  const router = useRouter();
+  const { logout } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    // Give AuthProvider time to refresh token before checking
-    const checkAuth = async () => {
-      // Wait a bit for AuthProvider to potentially refresh the token
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const token = await storage.getItem('accessToken');
-      console.log('[Dashboard] Checking auth, has token:', !!token);
-
-      if (!token) {
-        console.log('[Dashboard] No token found, redirecting to login');
-        router.push('/');
-      } else {
-        console.log('[Dashboard] Token found, staying on dashboard');
-      }
-    };
-
-    checkAuth();
-  }, [router]);
+  // AuthProvider handles all auth logic and redirects
+  // This component only renders when authenticated
 
   const handleLogout = async () => {
-    try {
-      const token = await storage.getItem('accessToken');
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      await storage.removeItem('accessToken');
-      await storage.removeItem('refreshToken'); // Also clear refresh token
-      router.push('/');
-    }
+    await logout();
   };
 
   const handleExport = async (format: 'csv' | 'json') => {
