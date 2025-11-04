@@ -17,7 +17,7 @@ export default function DebugPage() {
           nodeEnv: process.env.NODE_ENV,
           userAgent: navigator.userAgent,
           isStandalone: window.matchMedia('(display-mode: standalone)').matches,
-          isPWA: window.navigator.standalone === true,
+          isPWA: (window.navigator as any).standalone === true,
           cookieEnabled: navigator.cookieEnabled,
         },
         storage: {},
@@ -38,7 +38,7 @@ export default function DebugPage() {
           refreshTokenLength: refreshToken?.length || 0,
         };
       } catch (error) {
-        info.storage.error = error.message;
+        info.storage.error = error instanceof Error ? error.message : String(error);
       }
 
       // Check localStorage directly
@@ -54,7 +54,7 @@ export default function DebugPage() {
           allKeys: Object.keys(localStorage),
         };
       } catch (error) {
-        info.localStorage.error = error.message;
+        info.localStorage.error = error instanceof Error ? error.message : String(error);
       }
 
       // Check IndexedDB directly
@@ -72,11 +72,11 @@ export default function DebugPage() {
         const refreshTokenReq = store.get('refreshToken');
         
         const [idbAccessToken, idbRefreshToken] = await Promise.all([
-          new Promise(resolve => {
+          new Promise<string | null>(resolve => {
             accessTokenReq.onsuccess = () => resolve(accessTokenReq.result);
             accessTokenReq.onerror = () => resolve(null);
           }),
-          new Promise(resolve => {
+          new Promise<string | null>(resolve => {
             refreshTokenReq.onsuccess = () => resolve(refreshTokenReq.result);
             refreshTokenReq.onerror = () => resolve(null);
           }),
@@ -84,14 +84,14 @@ export default function DebugPage() {
 
         info.indexedDB = {
           accessToken: !!idbAccessToken,
-          accessTokenLength: idbAccessToken?.length || 0,
+          accessTokenLength: (idbAccessToken as string)?.length || 0,
           refreshToken: !!idbRefreshToken,
-          refreshTokenLength: idbRefreshToken?.length || 0,
+          refreshTokenLength: (idbRefreshToken as string)?.length || 0,
         };
 
         db.close();
       } catch (error) {
-        info.indexedDB.error = error.message;
+        info.indexedDB.error = error instanceof Error ? error.message : String(error);
       }
 
       // Test API endpoints
@@ -103,7 +103,7 @@ export default function DebugPage() {
           info.api.debug = { error: `${debugResponse.status}: ${debugResponse.statusText}` };
         }
       } catch (error) {
-        info.api.debug = { error: error.message };
+        info.api.debug = { error: error instanceof Error ? error.message : String(error) };
       }
 
       // Test verify endpoint if we have a token
@@ -123,7 +123,7 @@ export default function DebugPage() {
             };
           }
         } catch (error) {
-          info.api.verify = { error: error.message };
+          info.api.verify = { error: error instanceof Error ? error.message : String(error) };
         }
       }
 
@@ -146,7 +146,7 @@ export default function DebugPage() {
             };
           }
         } catch (error) {
-          info.api.refresh = { error: error.message };
+          info.api.refresh = { error: error instanceof Error ? error.message : String(error) };
         }
       }
 

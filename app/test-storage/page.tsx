@@ -28,7 +28,7 @@ export default function TestStoragePage() {
           refreshTokenLength: refreshToken?.length || 0,
         };
       } catch (error) {
-        testResults.tests.tokenExistence = { error: error.message };
+        testResults.tests.tokenExistence = { error: error instanceof Error ? error.message : String(error) };
       }
 
       // Test 2: Check localStorage directly
@@ -43,7 +43,7 @@ export default function TestStoragePage() {
           refreshTokenLength: lsRefreshToken?.length || 0,
         };
       } catch (error) {
-        testResults.tests.localStorage = { error: error.message };
+        testResults.tests.localStorage = { error: error instanceof Error ? error.message : String(error) };
       }
 
       // Test 3: Check IndexedDB directly
@@ -67,11 +67,11 @@ export default function TestStoragePage() {
         const refreshTokenReq = store.get('refreshToken');
         
         const [idbAccessToken, idbRefreshToken] = await Promise.all([
-          new Promise(resolve => {
+          new Promise<string | null>(resolve => {
             accessTokenReq.onsuccess = () => resolve(accessTokenReq.result);
             accessTokenReq.onerror = () => resolve(null);
           }),
-          new Promise(resolve => {
+          new Promise<string | null>(resolve => {
             refreshTokenReq.onsuccess = () => resolve(refreshTokenReq.result);
             refreshTokenReq.onerror = () => resolve(null);
           }),
@@ -79,14 +79,14 @@ export default function TestStoragePage() {
 
         testResults.tests.indexedDB = {
           accessToken: !!idbAccessToken,
-          accessTokenLength: idbAccessToken?.length || 0,
+          accessTokenLength: (idbAccessToken as string)?.length || 0,
           refreshToken: !!idbRefreshToken,
-          refreshTokenLength: idbRefreshToken?.length || 0,
+          refreshTokenLength: (idbRefreshToken as string)?.length || 0,
         };
 
         db.close();
       } catch (error) {
-        testResults.tests.indexedDB = { error: error.message };
+        testResults.tests.indexedDB = { error: error instanceof Error ? error.message : String(error) };
       }
 
       // Test 4: Check cookies
@@ -103,7 +103,7 @@ export default function TestStoragePage() {
           allCookies: Object.keys(cookies),
         };
       } catch (error) {
-        testResults.tests.cookies = { error: error.message };
+        testResults.tests.cookies = { error: error instanceof Error ? error.message : String(error) };
       }
 
       // Test 5: Test token verification
@@ -123,7 +123,7 @@ export default function TestStoragePage() {
           testResults.tests.tokenVerification = { error: 'No access token found' };
         }
       } catch (error) {
-        testResults.tests.tokenVerification = { error: error.message };
+        testResults.tests.tokenVerification = { error: error instanceof Error ? error.message : String(error) };
       }
 
       console.log('[TEST] Storage test complete:', testResults);
