@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import ThemeProvider from './components/ThemeProvider';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import AuthProvider from './components/AuthProvider';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
   title: 'Budget App - Smart Expense Tracker',
@@ -61,7 +64,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
       </head>
-      <body className="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-50 transition-colors">
+      <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen`}>
         <ServiceWorkerRegistration />
         <ThemeProvider>
           <AuthProvider>

@@ -5,6 +5,7 @@ import { formatINR } from '@/lib/currency';
 import ThemeToggle from './ThemeToggle';
 import AIInsights from './AIInsights';
 import AIAlerts from './AIAlerts';
+import AppleFitnessRings from './AppleFitnessRings';
 import { storage } from '@/lib/storage';
 
 interface BudgetData {
@@ -212,6 +213,11 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
     ? Math.round((summary.totalSpent / summary.budgetAmount) * 100)
     : 0;
 
+  // Calculate top category for Apple Fitness Rings
+  const sortedCategories = Object.entries(categoryBreakdown).sort(([, a], [, b]) => b - a);
+  const topCategoryName = sortedCategories.length > 0 ? sortedCategories[0][0] : 'None';
+  const topCategorySpent = sortedCategories.length > 0 ? sortedCategories[0][1] : 0;
+
   return (
     <div className="space-y-6">
       {/* Header with Theme Toggle */}
@@ -277,19 +283,32 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
       {/* AI Alerts */}
       <AIAlerts month={month} year={year} />
 
-      {/* Budget Summary Card */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Budget Summary Card - Mobile Optimized */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Budget Summary</h2>
+          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Budget Summary</h2>
         </div>
 
         {summary.budgetAmount ? (
           <>
+            {/* Apple Fitness Rings - Mobile Optimized */}
+            <div className="mb-6 sm:mb-8">
+              <AppleFitnessRings
+                totalSpent={summary.totalSpent}
+                budgetAmount={summary.budgetAmount}
+                month={month}
+                year={year}
+                topCategorySpent={topCategorySpent}
+                topCategoryName={topCategoryName}
+                topCategoryBudget={summary.budgetAmount * 0.3}
+              />
+            </div>
+
             <div className="mb-6">
               <div className="flex justify-between items-center mb-3">
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Progress</span>

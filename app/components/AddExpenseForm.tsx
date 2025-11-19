@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { formatINR } from '@/lib/currency';
 import { storage } from '@/lib/storage';
 
 interface AddExpenseFormProps {
@@ -68,7 +67,6 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
 
   const applyAISuggestion = () => {
     if (aiSuggestion) {
-      // Check if suggestion matches predefined categories
       if (PREDEFINED_CATEGORIES.includes(aiSuggestion)) {
         setCategory(aiSuggestion);
       } else {
@@ -91,7 +89,6 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
         return;
       }
 
-      // Use custom category if "Other" is selected and custom category is provided
       const finalCategory = category === 'Other' && customCategory ? customCategory : category;
 
       if (!finalCategory || finalCategory.trim() === '') {
@@ -124,7 +121,6 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
         return;
       }
 
-      // Reset form
       setAmount('');
       setCategory('Food');
       setCustomCategory('');
@@ -142,216 +138,182 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
+    <div className="bg-card text-card-foreground rounded-xl border shadow-sm animate-in">
+      <div className="p-6 border-b">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Add Expense</h2>
+            <p className="text-sm text-muted-foreground">Track a new transaction</p>
+          </div>
         </div>
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Add Expense</h2>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-700 dark:text-red-400 text-sm">
-          <div className="flex items-center gap-2">
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="p-6 space-y-6">
+        {error && (
+          <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium flex items-center gap-2">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {error}
           </div>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Amount (₹)
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">₹</span>
-              <input
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                className="w-full pl-8 pr-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg font-medium placeholder-gray-400 transition-all duration-200"
-                placeholder="0.00"
-              />
-            </div>
-            {amount && (
-              <p className="text-sm text-indigo-600 dark:text-indigo-400 font-medium">
-                {formatINR(parseFloat(amount))}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Category
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg appearance-none cursor-pointer transition-all duration-200"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'right 1rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em',
-              }}
-            >
-              {PREDEFINED_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-              <option value="Other">Other (Custom)</option>
-            </select>
-          </div>
-        </div>
-
-        {category === 'Other' && (
-          <div className="sm:col-span-2 space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Custom Category Name
-            </label>
-            <input
-              type="text"
-              value={customCategory}
-              onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
-              maxLength={50}
-              className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg placeholder-gray-400 transition-all duration-200"
-              placeholder="e.g., Groceries, Rent, etc."
-              required
-            />
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {customCategory.length}/50 characters
-            </p>
-          </div>
         )}
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Date
-          </label>
-          <div className="relative">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                Amount (₹)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                  className="flex h-10 w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                Category
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {PREDEFINED_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+                <option value="Other">Other (Custom)</option>
+              </select>
+            </div>
+          </div>
+
+          {category === 'Other' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none">
+                Custom Category Name
+              </label>
+              <input
+                type="text"
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
+                maxLength={50}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+                placeholder="e.g., Groceries"
+                required
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium leading-none">
+              Date
+            </label>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg transition-all duration-200"
-              style={{
-                colorScheme: 'dark'
-              }}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
             />
-            <svg className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Note (optional)
-            {aiLoading && (
-              <span className="ml-2 text-sm text-indigo-600 dark:text-indigo-400 animate-pulse">
-                🤖 AI analyzing...
-              </span>
-            )}
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => handleNoteChange(e.target.value)}
-            maxLength={500}
-            className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none text-lg placeholder-gray-400 transition-all duration-200"
-            rows={4}
-            placeholder="Add a note... (AI will suggest category)"
-          />
-          {aiSuggestion && (
-            <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">🤖</span>
-                  <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-                    AI suggests: <strong>{aiSuggestion}</strong>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium leading-none">
+                Note <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              {aiLoading && (
+                <span className="text-xs text-primary animate-pulse flex items-center gap-1">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+                  AI Analyzing...
+                </span>
+              )}
+            </div>
+            <textarea
+              value={note}
+              onChange={(e) => handleNoteChange(e.target.value)}
+              maxLength={500}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all duration-200"
+              placeholder="Add a note... (AI will suggest category)"
+            />
+            
+            {aiSuggestion && (
+              <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-lg">✨</span>
+                  <span className="text-muted-foreground">
+                    AI suggests: <span className="font-semibold text-foreground">{aiSuggestion}</span>
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={applyAISuggestion}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                  className="text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
                 >
                   Apply
                 </button>
               </div>
+            )}
+          </div>
+
+          <div className="flex items-center space-x-2 rounded-md border p-3 bg-muted/30">
+            <input
+              type="checkbox"
+              id="recurring"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="recurring" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none cursor-pointer">
+              Recurring expense
+            </label>
+          </div>
+
+          {isRecurring && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <label className="text-sm font-medium leading-none">
+                Frequency
+              </label>
+              <select
+                value={recurringFrequency}
+                onChange={(e) => setRecurringFrequency(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
             </div>
           )}
-        </div>
 
-        <div className="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-          <input
-            type="checkbox"
-            id="recurring"
-            checked={isRecurring}
-            onChange={(e) => setIsRecurring(e.target.checked)}
-            className="w-6 h-6 text-indigo-600 rounded-lg focus:ring-2 focus:ring-indigo-500 cursor-pointer transition-all duration-200"
-          />
-          <label htmlFor="recurring" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none">
-            Make this a recurring expense
-          </label>
-        </div>
-
-        {isRecurring && (
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Frequency
-            </label>
-            <select
-              value={recurringFrequency}
-              onChange={(e) => setRecurringFrequency(e.target.value)}
-              className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg appearance-none cursor-pointer transition-all duration-200"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'right 1rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em',
-              }}
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:from-indigo-800 active:to-purple-800 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transform hover:scale-[1.02]"
-        >
-          {loading ? (
-            <>
-              <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Adding Expense...
-            </>
-          ) : (
-            <>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Add Expense
-            </>
-          )}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full"
+          >
+            {loading ? 'Adding Expense...' : 'Add Expense'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
-

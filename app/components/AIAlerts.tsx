@@ -44,37 +44,28 @@ export default function AIAlerts({ month, year }: AIAlertsProps) {
     }
   };
 
-  if (loading) {
-    return null; // Don't show anything while loading
-  }
-
-  if (alerts.length === 0) {
-    return null; // Don't show if no alerts
+  if (loading || alerts.length === 0) {
+    return null;
   }
 
   return (
-    <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg shadow p-4 sm:p-6 border-l-4 border-amber-500">
-      <div className="flex items-center space-x-2 mb-3">
-        <span className="text-2xl">⚠️</span>
-        <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-          Smart Alerts
-        </h3>
+    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+      <div className="flex items-center gap-2 mb-3 text-amber-900 dark:text-amber-100">
+        <span className="text-lg">⚠️</span>
+        <h3 className="font-semibold text-sm tracking-tight uppercase">Attention Needed</h3>
       </div>
 
       <ul className="space-y-2">
         {alerts.map((alert, index) => (
           <li
             key={index}
-            className="flex items-start space-x-2 text-sm text-gray-700 dark:text-gray-300"
+            className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-200/90"
           >
-            <span className="text-amber-600 dark:text-amber-400 mt-0.5">
-              {alert.toLowerCase().includes('warning') || alert.toLowerCase().includes('alert') ? '🚨' : '💡'}
-            </span>
-            <span>{alert}</span>
+            <span className="mt-0.5">•</span>
+            <span className="leading-tight">{alert}</span>
           </li>
         ))}
       </ul>
     </div>
   );
 }
-

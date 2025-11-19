@@ -15,9 +15,6 @@ export default function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [exporting, setExporting] = useState(false);
 
-  // AuthProvider handles all auth logic and redirects
-  // This component only renders when authenticated
-
   const handleLogout = async () => {
     await logout();
   };
@@ -51,47 +48,51 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-background font-sans antialiased">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-900 shadow-sm dark:shadow-lg sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:justify-between sm:items-center">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">💰 Budget App</h1>
-            </div>
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold tracking-tight">Budget App</span>
+            <span className="hidden md:inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
+              Enterprise
+            </span>
+          </div>
 
-            {/* Action buttons - optimized for mobile */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleExport('csv')}
-                  disabled={exporting}
-                  className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  {exporting ? 'Exporting...' : 'CSV'}
-                </button>
-                <button
-                  onClick={() => handleExport('json')}
-                  disabled={exporting}
-                  className="flex-1 sm:flex-none px-4 py-3 text-sm font-medium bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  {exporting ? 'Exporting...' : 'JSON'}
-                </button>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex gap-2">
               <button
-                onClick={handleLogout}
-                className="px-4 py-3 text-sm font-medium bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl transition-all duration-200 min-h-[48px] flex items-center justify-center gap-2 shadow-sm hover:shadow-md"
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
+                Export CSV
+              </button>
+              <button
+                onClick={() => handleExport('json')}
+                disabled={exporting}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+              >
+                Export JSON
+              </button>
+            </div>
+            
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 h-9 px-4 py-2"
+            >
+              Logout
+            </button>
+            
+            {/* Mobile Export Menu (Simplified for now, could be a dropdown in future) */}
+            <div className="sm:hidden flex gap-1">
+               <button
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input h-9 w-9 p-0"
+                title="Export CSV"
+              >
+                📄
               </button>
             </div>
           </div>
@@ -99,15 +100,17 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Mobile: Add Expense Form First */}
-          <div className="lg:col-span-1 order-1 lg:order-1">
-            <AddExpenseForm onSuccess={() => setRefreshKey((k) => k + 1)} />
+      <main className="container py-6 px-4 md:px-6 lg:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+          {/* Add Expense Form - 4 columns on large screens */}
+          <div className="lg:col-span-4 order-1">
+            <div className="lg:sticky lg:top-24">
+              <AddExpenseForm onSuccess={() => setRefreshKey((k) => k + 1)} />
+            </div>
           </div>
 
-          {/* Mobile: Dashboard Second */}
-          <div className="lg:col-span-2 order-2 lg:order-2">
+          {/* Dashboard - 8 columns on large screens */}
+          <div className="lg:col-span-8 order-2">
             <BudgetDashboard
               key={refreshKey}
               onResetSuccess={() => setRefreshKey((k) => k + 1)}
@@ -116,9 +119,8 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* PWA Install Button - Floating */}
+      {/* PWA Install Button */}
       <PWAInstallButton />
     </div>
   );
 }
-
