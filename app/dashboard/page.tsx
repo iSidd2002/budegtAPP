@@ -50,9 +50,9 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background font-sans antialiased">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+        <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-4 md:px-6 max-w-7xl mx-auto">
           <div className="flex items-center gap-2">
             <span className="text-xl font-bold tracking-tight">Budget App</span>
             <span className="hidden md:inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
@@ -100,9 +100,9 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container py-6 px-4 md:px-6 lg:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      {/* Main Content - Mobile Optimized Margins (16px iPhone safe area, 16dp Android) */}
+      <main className="container py-4 sm:py-6 px-4 sm:px-4 md:px-6 lg:py-8 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
           {/* Add Expense Form - 4 columns on large screens */}
           <div className="lg:col-span-4 order-1">
             <div className="lg:sticky lg:top-24">

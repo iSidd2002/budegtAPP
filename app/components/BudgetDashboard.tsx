@@ -282,16 +282,16 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
   const topCategorySpent = sortedCategories.length > 0 ? sortedCategories[0][1] : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Header with Theme Toggle */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with Theme Toggle - Mobile Optimized */}
+      <div className="flex justify-between items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
             budgetType === 'family' 
               ? 'bg-gradient-to-br from-purple-500 to-pink-600' 
               : 'bg-gradient-to-br from-blue-500 to-indigo-600'
           }`}>
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {budgetType === 'family' ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               ) : (
@@ -299,19 +299,21 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
               )}
             </svg>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{budgetType} Budget</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">Dashboard</h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize">{budgetType} Budget</p>
           </div>
         </div>
-        <ThemeToggle />
+        <div className="shrink-0">
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Budget Type Tabs */}
       <BudgetTabs activeTab={budgetType} onTabChange={handleTabChange} />
 
-      {/* Month/Year Selector */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+      {/* Month/Year Selector - Mobile Optimized */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Select Period</h3>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -361,7 +363,7 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       <AIAlerts month={month} year={year} />
 
       {/* Budget Summary Card - Mobile Optimized */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
           <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shrink-0">
             <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,57 +430,57 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
               </div>
             </div>
 
-            <div className="space-y-4">
-              {/* Quick Increase Budget */}
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center justify-between mb-3">
+            <div className="space-y-4 sm:space-y-5">
+              {/* Quick Increase Budget - Mobile Optimized */}
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-3 sm:p-4 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
                   <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span className="font-semibold text-emerald-800 dark:text-emerald-200">Quick Increase</span>
+                    <span className="font-semibold text-sm sm:text-base text-emerald-800 dark:text-emerald-200">Quick Increase</span>
                   </div>
                   <button
                     type="button"
                     onClick={() => setShowIncreaseForm(!showIncreaseForm)}
-                    className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm font-medium"
+                    className="text-emerald-600 dark:text-emerald-400 active:text-emerald-700 dark:active:text-emerald-300 text-xs sm:text-sm font-medium min-h-[32px] sm:min-h-[36px] px-2 sm:px-3 touch-manipulation"
                   >
                     {showIncreaseForm ? 'Hide' : 'Show'}
                   </button>
                 </div>
                 
                 {showIncreaseForm ? (
-                  <form onSubmit={handleIncreaseBudget} className="space-y-3">
-                    <div className="flex gap-2">
+                  <form onSubmit={handleIncreaseBudget} className="space-y-3 sm:space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                       <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm">+₹</span>
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">+₹</span>
                         <input
                           type="number"
                           step="0.01"
                           value={increaseAmount}
                           onChange={(e) => setIncreaseAmount(e.target.value)}
                           placeholder="Amount to add"
-                          className="w-full pl-10 pr-3 py-3 border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                          className="w-full pl-9 sm:pl-10 pr-3 py-3 sm:py-3.5 border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                         />
                       </div>
                       <button
                         type="submit"
                         disabled={settingBudget || !increaseAmount}
-                        className="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 sm:px-5 py-3 sm:py-3.5 bg-emerald-600 active:bg-emerald-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] touch-manipulation"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
-                        Add
+                        <span className="text-sm sm:text-base">Add</span>
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 sm:gap-3">
                       {[1000, 2000, 5000, 10000].map((amount) => (
                         <button
                           key={amount}
                           type="button"
                           onClick={() => setIncreaseAmount(String(amount))}
-                          className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                          className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full active:bg-emerald-100 dark:active:bg-emerald-900/30 transition-colors min-h-[40px] sm:min-h-[44px] touch-manipulation"
                         >
                           +{formatINR(amount)}
                         </button>
@@ -486,7 +488,7 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                     </div>
                   </form>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     {[1000, 2000, 5000, 10000].map((amount) => (
                       <button
                         key={amount}
@@ -495,7 +497,7 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                           setIncreaseAmount(String(amount));
                           setShowIncreaseForm(true);
                         }}
-                        className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                        className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full active:bg-emerald-100 dark:active:bg-emerald-900/30 transition-colors min-h-[40px] sm:min-h-[44px] touch-manipulation"
                       >
                         +{formatINR(amount)}
                       </button>
@@ -504,26 +506,26 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                 )}
               </div>
 
-              {/* Update Budget Form */}
-              <form onSubmit={handleSetBudget} className="space-y-3">
+              {/* Update Budget Form - Mobile Optimized */}
+              <form onSubmit={handleSetBudget} className="space-y-3 sm:space-y-4">
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">₹</span>
+                  <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">₹</span>
                   <input
                     type="number"
                     step="0.01"
                     value={budgetAmount}
                     onChange={(e) => setBudgetAmount(e.target.value)}
                     placeholder="Set new budget amount"
-                    className="w-full pl-8 pr-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                    className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-lg font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={settingBudget || !budgetAmount}
-                  className={`w-full px-6 py-4 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full px-4 sm:px-6 py-3 sm:py-4 text-white rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 min-h-[48px] sm:min-h-[56px] flex items-center justify-center gap-2 sm:gap-3 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation ${
                     budgetType === 'family'
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 active:from-purple-700 active:to-pink-700'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 active:from-indigo-700 active:to-purple-700'
                   }`}
                 >
                   {settingBudget ? (
@@ -548,7 +550,7 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                 type="button"
                 onClick={handleResetBudget}
                 disabled={resettingBudget}
-                className="w-full px-6 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 min-h-[48px] sm:min-h-[56px] flex items-center justify-center gap-2 sm:gap-3 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 title="Reset budget and optionally delete all expenses for this month"
               >
                 {resettingBudget ? (
