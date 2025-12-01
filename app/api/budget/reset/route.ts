@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const ip = getClientIp(request);
     const body = await request.json();
-    const { month, year, deleteExpenses } = body;
+    const { month, year, budgetType = 'personal', deleteExpenses } = body;
 
     if (!month || !year) {
       return NextResponse.json(
@@ -27,10 +27,11 @@ export async function POST(request: NextRequest) {
       // Reset budget to 0
       const budget = await tx.budget.upsert({
         where: {
-          userId_month_year: {
+          userId_month_year_budgetType: {
             userId: auth.userId,
             month: parseInt(month),
             year: parseInt(year),
+            budgetType: budgetType,
           },
         },
         update: {
@@ -40,13 +41,14 @@ export async function POST(request: NextRequest) {
           userId: auth.userId,
           month: parseInt(month),
           year: parseInt(year),
+          budgetType: budgetType,
           amount: 0,
         },
       });
 
       let deletedCount = 0;
 
-      // Delete expenses if requested
+      // Delete expenses if requested (only for the specific budgetType)
       if (deleteExpenses === true) {
         // Calculate date range for the month
         const startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
         const deleteResult = await tx.expense.deleteMany({
           where: {
             userId: auth.userId,
+            budgetType: budgetType,
             date: {
               gte: startDate,
               lte: endDate,
@@ -76,6 +79,7 @@ export async function POST(request: NextRequest) {
       {
         month,
         year,
+        budgetType,
         deletedExpenses: result.deletedCount,
       },
       ip

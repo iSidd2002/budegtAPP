@@ -20,6 +20,7 @@ export const SetBudgetSchema = z.object({
   amount: z.number().positive('Amount must be positive'),
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2000),
+  budgetType: z.enum(['personal', 'family']).optional().default('personal'),
 });
 
 // Expense schemas
@@ -31,6 +32,7 @@ export const CreateExpenseSchema = z.object({
     .regex(/^[a-zA-Z0-9\s\-&()]+$/, 'Category can only contain letters, numbers, spaces, hyphens, ampersands, and parentheses'),
   date: z.string().datetime('Invalid date format'),
   note: z.string().max(500).optional(),
+  budgetType: z.enum(['personal', 'family']).optional().default('personal'),
   isRecurring: z.boolean().optional().default(false),
   recurringFrequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional(),
   recurringEndDate: z.string().datetime().optional(),

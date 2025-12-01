@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
         category: validatedData.category,
         date: new Date(validatedData.date),
         note: validatedData.note,
+        budgetType: validatedData.budgetType || 'personal',
         isRecurring: validatedData.isRecurring || false,
         recurringFrequency: validatedData.recurringFrequency,
         recurringEndDate: validatedData.recurringEndDate ? new Date(validatedData.recurringEndDate) : null,
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       {
         amount: expense.amount,
         category: expense.category,
+        budgetType: expense.budgetType,
         isRecurring: expense.isRecurring,
       },
       ip

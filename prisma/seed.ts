@@ -19,14 +19,15 @@ async function main() {
 
   console.log(`✅ Created user: ${user.email}`);
 
-  // Create budget
+  // Create personal budget
   const now = new Date();
-  const budget = await prisma.budget.upsert({
+  const personalBudget = await prisma.budget.upsert({
     where: {
-      userId_month_year: {
+      userId_month_year_budgetType: {
         userId: user.id,
         month: now.getMonth() + 1,
         year: now.getFullYear(),
+        budgetType: 'personal',
       },
     },
     update: {},
@@ -35,12 +36,35 @@ async function main() {
       amount: 2000,
       month: now.getMonth() + 1,
       year: now.getFullYear(),
+      budgetType: 'personal',
     },
   });
 
-  console.log(`✅ Created budget: $${budget.amount}`);
+  console.log(`✅ Created personal budget: $${personalBudget.amount}`);
 
-  // Create sample expenses
+  // Create family budget
+  const familyBudget = await prisma.budget.upsert({
+    where: {
+      userId_month_year_budgetType: {
+        userId: user.id,
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        budgetType: 'family',
+      },
+    },
+    update: {},
+    create: {
+      userId: user.id,
+      amount: 5000,
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+      budgetType: 'family',
+    },
+  });
+
+  console.log(`✅ Created family budget: $${familyBudget.amount}`);
+
+  // Create sample personal expenses
   const expenses = [
     {
       userId: user.id,
@@ -48,6 +72,7 @@ async function main() {
       category: 'Food',
       date: new Date(now.getFullYear(), now.getMonth(), 1),
       note: 'Grocery shopping',
+      budgetType: 'personal',
     },
     {
       userId: user.id,
@@ -55,6 +80,7 @@ async function main() {
       category: 'Transport',
       date: new Date(now.getFullYear(), now.getMonth(), 5),
       note: 'Gas',
+      budgetType: 'personal',
     },
     {
       userId: user.id,
@@ -62,6 +88,7 @@ async function main() {
       category: 'Entertainment',
       date: new Date(now.getFullYear(), now.getMonth(), 10),
       note: 'Movie tickets',
+      budgetType: 'personal',
     },
     {
       userId: user.id,
@@ -69,6 +96,24 @@ async function main() {
       category: 'Utilities',
       date: new Date(now.getFullYear(), now.getMonth(), 15),
       note: 'Electric bill',
+      budgetType: 'personal',
+    },
+    // Family expenses
+    {
+      userId: user.id,
+      amount: 500,
+      category: 'Food',
+      date: new Date(now.getFullYear(), now.getMonth(), 3),
+      note: 'Family dinner',
+      budgetType: 'family',
+    },
+    {
+      userId: user.id,
+      amount: 200,
+      category: 'Entertainment',
+      date: new Date(now.getFullYear(), now.getMonth(), 8),
+      note: 'Theme park visit',
+      budgetType: 'family',
     },
   ];
 

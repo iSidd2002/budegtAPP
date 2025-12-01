@@ -5,6 +5,7 @@ import { storage } from '@/lib/storage';
 
 interface AddExpenseFormProps {
   onSuccess?: () => void;
+  budgetType?: 'personal' | 'family';
 }
 
 const PREDEFINED_CATEGORIES = [
@@ -16,7 +17,7 @@ const PREDEFINED_CATEGORIES = [
   'Shopping',
 ];
 
-export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
+export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: AddExpenseFormProps) {
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Food');
   const [customCategory, setCustomCategory] = useState('');
@@ -108,6 +109,7 @@ export default function AddExpenseForm({ onSuccess }: AddExpenseFormProps) {
           category: finalCategory,
           date: new Date(date).toISOString(),
           note: note || undefined,
+          budgetType,
           isRecurring,
           recurringFrequency: isRecurring ? recurringFrequency : undefined,
         }),

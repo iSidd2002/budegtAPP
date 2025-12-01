@@ -14,6 +14,7 @@ export default function Dashboard() {
   const { logout } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [exporting, setExporting] = useState(false);
+  const [budgetType, setBudgetType] = useState<'personal' | 'family'>('personal');
 
   const handleLogout = async () => {
     await logout();
@@ -105,15 +106,20 @@ export default function Dashboard() {
           {/* Add Expense Form - 4 columns on large screens */}
           <div className="lg:col-span-4 order-1">
             <div className="lg:sticky lg:top-24">
-              <AddExpenseForm onSuccess={() => setRefreshKey((k) => k + 1)} />
+              <AddExpenseForm 
+                onSuccess={() => setRefreshKey((k) => k + 1)} 
+                budgetType={budgetType}
+              />
             </div>
           </div>
 
           {/* Dashboard - 8 columns on large screens */}
           <div className="lg:col-span-8 order-2">
             <BudgetDashboard
-              key={refreshKey}
+              key={`${refreshKey}-${budgetType}`}
               onResetSuccess={() => setRefreshKey((k) => k + 1)}
+              budgetType={budgetType}
+              onBudgetTypeChange={setBudgetType}
             />
           </div>
         </div>

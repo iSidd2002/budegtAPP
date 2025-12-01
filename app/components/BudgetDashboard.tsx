@@ -6,6 +6,7 @@ import ThemeToggle from './ThemeToggle';
 import AIInsights from './AIInsights';
 import AIAlerts from './AIAlerts';
 import AppleFitnessRings from './AppleFitnessRings';
+import BudgetTabs from './BudgetTabs';
 import { storage } from '@/lib/storage';
 
 interface BudgetData {
@@ -13,6 +14,7 @@ interface BudgetData {
   summary: {
     month: number;
     year: number;
+    budgetType?: string;
     totalSpent: number;
     budgetAmount: number | null;
     remaining: number | null;
@@ -25,27 +27,47 @@ interface BudgetData {
     category: string;
     date: string;
     note?: string;
+    budgetType?: string;
   }>;
 }
 
 interface BudgetDashboardProps {
   onResetSuccess?: () => void;
+  budgetType?: 'personal' | 'family';
+  onBudgetTypeChange?: (type: 'personal' | 'family') => void;
 }
 
-export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps = {}) {
+export default function BudgetDashboard({ onResetSuccess, budgetType: externalBudgetType, onBudgetTypeChange }: BudgetDashboardProps = {}) {
   const [data, setData] = useState<BudgetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [budgetAmount, setBudgetAmount] = useState('');
+  const [increaseAmount, setIncreaseAmount] = useState('');
+  const [showIncreaseForm, setShowIncreaseForm] = useState(false);
   const [settingBudget, setSettingBudget] = useState(false);
   const [resettingBudget, setResettingBudget] = useState(false);
+  const [budgetType, setBudgetType] = useState<'personal' | 'family'>(externalBudgetType || 'personal');
   const [aiRecommendation, setAiRecommendation] = useState<{
     suggestedAmount: number;
     reasoning: string;
   } | null>(null);
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+
+  // Sync external budgetType changes
+  useEffect(() => {
+    if (externalBudgetType && externalBudgetType !== budgetType) {
+      setBudgetType(externalBudgetType);
+    }
+  }, [externalBudgetType]);
+
+  const handleTabChange = (newType: 'personal' | 'family') => {
+    setBudgetType(newType);
+    if (onBudgetTypeChange) {
+      onBudgetTypeChange(newType);
+    }
+  };
 
   const fetchAIRecommendation = async () => {
     setLoadingRecommendation(true);
@@ -54,7 +76,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
       if (!token) return;
 
       const response = await fetch(
-        `/api/ai/budget-recommendation?month=${month}&year=${year}`,
+        `/api/ai/budget-recommendation?month=${month}&year=${year}&budgetType=${budgetType}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           credentials: 'include',
@@ -74,11 +96,12 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const token = await storage.getItem('accessToken');
       if (!token) return;
 
       const response = await fetch(
-        `/api/budget?month=${month}&year=${year}`,
+        `/api/budget?month=${month}&year=${year}&budgetType=${budgetType}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           credentials: 'include',
@@ -103,7 +126,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
 
   useEffect(() => {
     fetchData();
-  }, [month, year]);
+  }, [month, year, budgetType]);
 
   const handleSetBudget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +144,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
           amount: parseFloat(budgetAmount),
           month,
           year,
+          budgetType,
         }),
         credentials: 'include',
       });
@@ -136,10 +160,48 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
     }
   };
 
+  const handleIncreaseBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data?.summary.budgetAmount || !increaseAmount) return;
+    
+    setSettingBudget(true);
+
+    try {
+      const token = await storage.getItem('accessToken');
+      const newAmount = data.summary.budgetAmount + parseFloat(increaseAmount);
+      
+      const response = await fetch('/api/budget', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: newAmount,
+          month,
+          year,
+          budgetType,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to increase budget');
+      setIncreaseAmount('');
+      setShowIncreaseForm(false);
+      fetchData();
+    } catch (err) {
+      setError('Failed to increase budget');
+      console.error(err);
+    } finally {
+      setSettingBudget(false);
+    }
+  };
+
   const handleResetBudget = async () => {
+    const budgetLabel = budgetType === 'family' ? 'FAMILY' : 'PERSONAL';
     const deleteExpenses = confirm(
-      '⚠️ RESET BUDGET\n\n' +
-      'Do you want to DELETE ALL EXPENSES for this month along with resetting the budget?\n\n' +
+      `⚠️ RESET ${budgetLabel} BUDGET\n\n` +
+      `Do you want to DELETE ALL ${budgetLabel} EXPENSES for this month along with resetting the budget?\n\n` +
       '• Click OK to RESET BUDGET + DELETE ALL EXPENSES\n' +
       '• Click Cancel to only RESET BUDGET (keep expenses)\n\n' +
       'This action cannot be undone!'
@@ -147,8 +209,8 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
 
     const confirmReset = confirm(
       deleteExpenses
-        ? '🗑️ FINAL CONFIRMATION\n\nYou are about to:\n• Reset budget to ₹0\n• DELETE ALL expenses for this month\n\nThis will permanently delete all your expense data!\n\nAre you absolutely sure?'
-        : '⚠️ CONFIRMATION\n\nYou are about to reset your budget to ₹0.\n\nYour expenses will remain but the budget will be cleared.\n\nContinue?'
+        ? `🗑️ FINAL CONFIRMATION\n\nYou are about to:\n• Reset ${budgetLabel.toLowerCase()} budget to ₹0\n• DELETE ALL ${budgetLabel.toLowerCase()} expenses for this month\n\nThis will permanently delete all your expense data!\n\nAre you absolutely sure?`
+        : `⚠️ CONFIRMATION\n\nYou are about to reset your ${budgetLabel.toLowerCase()} budget to ₹0.\n\nYour expenses will remain but the budget will be cleared.\n\nContinue?`
     );
 
     if (!confirmReset) {
@@ -168,6 +230,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
         body: JSON.stringify({
           month,
           year,
+          budgetType,
           deleteExpenses,
         }),
         credentials: 'include',
@@ -178,9 +241,9 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
       const data = await response.json();
 
       if (deleteExpenses && data.deletedExpenses > 0) {
-        alert(`✅ Success!\n\nBudget reset to ₹0\n${data.deletedExpenses} expense(s) deleted`);
+        alert(`✅ Success!\n\n${budgetLabel} budget reset to ₹0\n${data.deletedExpenses} expense(s) deleted`);
       } else {
-        alert('✅ Budget reset to ₹0');
+        alert(`✅ ${budgetLabel} budget reset to ₹0`);
       }
 
       setBudgetAmount('');
@@ -223,15 +286,29 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
       {/* Header with Theme Toggle */}
       <div className="flex justify-between items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+            budgetType === 'family' 
+              ? 'bg-gradient-to-br from-purple-500 to-pink-600' 
+              : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+          }`}>
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              {budgetType === 'family' ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              )}
             </svg>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{budgetType} Budget</p>
+          </div>
         </div>
         <ThemeToggle />
       </div>
+
+      {/* Budget Type Tabs */}
+      <BudgetTabs activeTab={budgetType} onTabChange={handleTabChange} />
 
       {/* Month/Year Selector */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -352,6 +429,82 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
             </div>
 
             <div className="space-y-4">
+              {/* Quick Increase Budget */}
+              <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span className="font-semibold text-emerald-800 dark:text-emerald-200">Quick Increase</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowIncreaseForm(!showIncreaseForm)}
+                    className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 text-sm font-medium"
+                  >
+                    {showIncreaseForm ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+                
+                {showIncreaseForm ? (
+                  <form onSubmit={handleIncreaseBudget} className="space-y-3">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm">+₹</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={increaseAmount}
+                          onChange={(e) => setIncreaseAmount(e.target.value)}
+                          placeholder="Amount to add"
+                          className="w-full pl-10 pr-3 py-3 border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={settingBudget || !increaseAmount}
+                        className="px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Add
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {[1000, 2000, 5000, 10000].map((amount) => (
+                        <button
+                          key={amount}
+                          type="button"
+                          onClick={() => setIncreaseAmount(String(amount))}
+                          className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                        >
+                          +{formatINR(amount)}
+                        </button>
+                      ))}
+                    </div>
+                  </form>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {[1000, 2000, 5000, 10000].map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => {
+                          setIncreaseAmount(String(amount));
+                          setShowIncreaseForm(true);
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                      >
+                        +{formatINR(amount)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Update Budget Form */}
               <form onSubmit={handleSetBudget} className="space-y-3">
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">₹</span>
@@ -360,14 +513,18 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
                     step="0.01"
                     value={budgetAmount}
                     onChange={(e) => setBudgetAmount(e.target.value)}
-                    placeholder="Update budget amount"
+                    placeholder="Set new budget amount"
                     className="w-full pl-8 pr-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={settingBudget || !budgetAmount}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`w-full px-6 py-4 text-white rounded-xl text-lg font-semibold transition-all duration-200 min-h-[56px] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed ${
+                    budgetType === 'family'
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
+                  }`}
                 >
                   {settingBudget ? (
                     <>
@@ -381,7 +538,7 @@ export default function BudgetDashboard({ onResetSuccess }: BudgetDashboardProps
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                       </svg>
-                      Update Budget
+                      Set {budgetType === 'family' ? 'Family' : 'Personal'} Budget
                     </>
                   )}
                 </button>

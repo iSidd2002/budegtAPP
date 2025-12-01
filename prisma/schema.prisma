@@ -48,12 +48,14 @@ model Budget {
   amount                Float
   month                 Int       // 1-12
   year                  Int
+  budgetType            String    @default("personal") // "personal" or "family"
   
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   
-  @@unique([userId, month, year])
+  @@unique([userId, month, year, budgetType])
   @@index([userId])
+  @@index([budgetType])
 }
 
 model Expense {
@@ -65,6 +67,7 @@ model Expense {
   category              String    // e.g., "food", "transport", "utilities"
   date                  DateTime
   note                  String?
+  budgetType            String    @default("personal") // "personal" or "family"
   
   isRecurring           Boolean   @default(false)
   recurringFrequency    String?   // "daily", "weekly", "monthly", "yearly"
@@ -76,6 +79,7 @@ model Expense {
   @@index([userId])
   @@index([date])
   @@index([category])
+  @@index([budgetType])
 }
 
 model AuditLog {

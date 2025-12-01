@@ -17,14 +17,16 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request);
     const body = await request.json();
     const validatedData = SetBudgetSchema.parse(body);
+    const budgetType = validatedData.budgetType || 'personal';
 
     // Upsert budget
     const budget = await prisma.budget.upsert({
       where: {
-        userId_month_year: {
+        userId_month_year_budgetType: {
           userId: auth.userId,
           month: validatedData.month,
           year: validatedData.year,
+          budgetType: budgetType,
         },
       },
       update: { amount: validatedData.amount },
@@ -33,6 +35,7 @@ export async function POST(request: NextRequest) {
         amount: validatedData.amount,
         month: validatedData.month,
         year: validatedData.year,
+        budgetType: budgetType,
       },
     });
 
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
       'BUDGET_SET',
       'budget',
       budget.id,
-      { amount: budget.amount, month: budget.month, year: budget.year },
+      { amount: budget.amount, month: budget.month, year: budget.year, budgetType: budget.budgetType },
       ip
     );
 
@@ -82,25 +85,28 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
+    const budgetType = searchParams.get('budgetType') || 'personal';
 
     // Get budget
     const budget = await prisma.budget.findUnique({
       where: {
-        userId_month_year: {
+        userId_month_year_budgetType: {
           userId: auth.userId,
           month,
           year,
+          budgetType,
         },
       },
     });
 
-    // Get expenses for the month
+    // Get expenses for the month filtered by budgetType
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59);
 
     const expenses = await prisma.expense.findMany({
       where: {
         userId: auth.userId,
+        budgetType: budgetType,
         date: {
           gte: startDate,
           lte: endDate,
@@ -127,6 +133,7 @@ export async function GET(request: NextRequest) {
         summary: {
           month,
           year,
+          budgetType,
           totalSpent,
           budgetAmount: budget?.amount || null,
           remaining,

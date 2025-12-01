@@ -20,18 +20,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get month and year from query params
+    // Get month, year, and budgetType from query params
     const { searchParams } = new URL(request.url);
     const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
+    const budgetType = searchParams.get('budgetType') || 'personal';
 
     // Get budget
     const budget = await prisma.budget.findUnique({
       where: {
-        userId_month_year: {
+        userId_month_year_budgetType: {
           userId: payload.userId,
           month,
           year,
+          budgetType,
         },
       },
     });
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
     const expenses = await prisma.expense.findMany({
       where: {
         userId: payload.userId,
+        budgetType: budgetType,
         date: {
           gte: startOfMonth,
           lte: endOfMonth,
