@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { suggestBudget } from '@/lib/ai';
+import { suggestBudget, BudgetType } from '@/lib/ai';
 import { verifyAccessToken } from '@/lib/auth';
 
 const prisma = new PrismaClient();
+
+// Simple in-memory cache for AI recommendations (5 minute TTL)
+const recommendationCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(userId: string, month: number, year: number, budgetType: string): string {
+  return `${userId}-${month}-${year}-${budgetType}`;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,7 +32,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const month = parseInt(searchParams.get('month') || String(new Date().getMonth() + 1));
     const year = parseInt(searchParams.get('year') || String(new Date().getFullYear()));
-    const budgetType = searchParams.get('budgetType') || 'personal';
+    const budgetType = (searchParams.get('budgetType') || 'personal') as BudgetType;
+
+    // Check cache first
+    const cacheKey = getCacheKey(payload.userId, month, year, budgetType);
+    const cached = recommendationCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json({ ...cached.data, cached: true });
+    }
 
     // Get current budget
     const currentBudget = await prisma.budget.findUnique({
@@ -58,10 +73,20 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Generate AI budget recommendation
-    const recommendation = await suggestBudget(expenses, currentBudget?.amount);
+    // Generate AI budget recommendation with budget type context
+    const recommendation = await suggestBudget(expenses, currentBudget?.amount, budgetType);
 
-    return NextResponse.json(recommendation);
+    // Cache the result
+    recommendationCache.set(cacheKey, { data: recommendation, timestamp: Date.now() });
+
+    // Clean up old cache entries
+    for (const [key, value] of recommendationCache.entries()) {
+      if (Date.now() - value.timestamp > CACHE_TTL * 2) {
+        recommendationCache.delete(key);
+      }
+    }
+
+    return NextResponse.json({ ...recommendation, budgetType });
   } catch (error) {
     console.error('Error in budget-recommendation API:', error);
     return NextResponse.json(

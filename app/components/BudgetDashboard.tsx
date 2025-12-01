@@ -359,8 +359,8 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
         </div>
       </div>
 
-      {/* AI Alerts */}
-      <AIAlerts month={month} year={year} />
+      {/* AI Alerts - Budget Type Aware */}
+      <AIAlerts month={month} year={year} budgetType={budgetType} />
 
       {/* Budget Summary Card - Mobile Optimized */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
@@ -625,8 +625,8 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
         )}
       </div>
 
-      {/* AI Insights */}
-      <AIInsights />
+      {/* AI Insights - Budget Type Aware */}
+      <AIInsights month={month} year={year} budgetType={budgetType} />
 
       {/* Category Breakdown */}
       {Object.keys(categoryBreakdown).length > 0 && (

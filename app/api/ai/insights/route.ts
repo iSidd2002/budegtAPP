@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { generateSpendingInsights } from '@/lib/ai';
+import { generateSpendingInsights, BudgetType } from '@/lib/ai';
 import { verifyAccessToken } from '@/lib/auth';
 
 const prisma = new PrismaClient();
+
+// Simple in-memory cache for AI insights (5 minute TTL)
+const insightsCache = new Map<string, { data: string[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCacheKey(userId: string, month: number, year: number, budgetType: string): string {
+  return `insights-${userId}-${month}-${year}-${budgetType}`;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,14 +28,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get current month's expenses
+    // Get month, year, and budgetType from query params
+    const { searchParams } = new URL(request.url);
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const month = parseInt(searchParams.get('month') || String(now.getMonth() + 1));
+    const year = parseInt(searchParams.get('year') || String(now.getFullYear()));
+    const budgetType = (searchParams.get('budgetType') || 'personal') as BudgetType;
+
+    // Check cache first
+    const cacheKey = getCacheKey(payload.userId, month, year, budgetType);
+    const cached = insightsCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json({ insights: cached.data, budgetType, cached: true });
+    }
+
+    // Get current month's expenses filtered by budget type
+    const startOfMonth = new Date(year, month - 1, 1);
+    const endOfMonth = new Date(year, month, 0, 23, 59, 59);
 
     const expenses = await prisma.expense.findMany({
       where: {
         userId: payload.userId,
+        budgetType: budgetType,
         date: {
           gte: startOfMonth,
           lte: endOfMonth,
@@ -44,10 +66,20 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Generate AI insights
-    const insights = await generateSpendingInsights(expenses);
+    // Generate AI insights with budget type context
+    const insights = await generateSpendingInsights(expenses, budgetType);
 
-    return NextResponse.json({ insights });
+    // Cache the result
+    insightsCache.set(cacheKey, { data: insights, timestamp: Date.now() });
+
+    // Clean up old cache entries
+    for (const [key, value] of insightsCache.entries()) {
+      if (Date.now() - value.timestamp > CACHE_TTL * 2) {
+        insightsCache.delete(key);
+      }
+    }
+
+    return NextResponse.json({ insights, budgetType });
   } catch (error) {
     console.error('Error in insights API:', error);
     return NextResponse.json(

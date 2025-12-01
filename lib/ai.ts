@@ -6,6 +6,9 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Get the Gemini 2.5 Flash model (stable version)
 const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
+// Budget type definitions for context-aware AI
+export type BudgetType = 'personal' | 'family';
+
 // Common expense categories
 export const EXPENSE_CATEGORIES = [
   'Food & Dining',
@@ -22,10 +25,47 @@ export const EXPENSE_CATEGORIES = [
   'Other',
 ];
 
+// Budget-type specific category priorities (used for future category-based insights)
+export const PERSONAL_FOCUS_CATEGORIES = [
+  'Personal Care', 'Entertainment', 'Shopping', 'Food & Dining',
+  'Subscriptions', 'Travel', 'Education', 'Healthcare'
+] as const;
+
+export const FAMILY_FOCUS_CATEGORIES = [
+  'Groceries', 'Utilities', 'Healthcare', 'Education',
+  'Transportation', 'Food & Dining', 'Shopping', 'Entertainment'
+] as const;
+
 // Helper function to strip markdown code blocks from AI responses
 function stripMarkdown(text: string): string {
   // Remove ```json and ``` markers
   return text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+}
+
+// Get budget-type specific context for AI prompts
+function getBudgetTypeContext(budgetType: BudgetType): {
+  label: string;
+  emoji: string;
+  focusAreas: string;
+  savingsTips: string;
+  persona: string;
+} {
+  if (budgetType === 'family') {
+    return {
+      label: 'Family',
+      emoji: '👨‍👩‍👧‍👦',
+      focusAreas: 'household expenses, groceries, utilities, children\'s education, family healthcare, home maintenance, family activities, and shared goals',
+      savingsTips: 'meal planning, bulk buying, energy efficiency, carpooling for school runs, family-friendly free activities, and optimizing household subscriptions',
+      persona: 'You are a warm, supportive family financial advisor who understands the challenges of managing a household budget. You speak in a friendly, encouraging tone and focus on practical tips that benefit the whole family.'
+    };
+  }
+  return {
+    label: 'Personal',
+    emoji: '👤',
+    focusAreas: 'individual spending habits, personal goals, self-care, entertainment, personal development, hobbies, and individual savings',
+    savingsTips: 'tracking personal subscriptions, finding deals on entertainment, meal prepping, optimizing commute costs, and building an emergency fund',
+    persona: 'You are a friendly personal finance coach who helps individuals manage their money better. You speak in an encouraging, motivational tone and focus on helping them achieve their personal financial goals.'
+  };
 }
 
 /**
@@ -62,12 +102,19 @@ Respond with ONLY the category name, nothing else. Choose the most relevant cate
 }
 
 /**
- * Generate spending insights based on expense data
+ * Generate spending insights based on expense data (budget-type aware)
  */
-export async function generateSpendingInsights(expenses: any[]): Promise<string[]> {
+export async function generateSpendingInsights(
+  expenses: any[],
+  budgetType: BudgetType = 'personal'
+): Promise<string[]> {
   try {
+    const context = getBudgetTypeContext(budgetType);
+
     if (expenses.length === 0) {
-      return ['No expenses recorded yet. Start tracking to get insights!'];
+      return budgetType === 'family'
+        ? [`${context.emoji} No family expenses recorded yet. Start tracking household spending to get insights!`]
+        : [`${context.emoji} No personal expenses recorded yet. Start tracking to get personalized insights!`];
     }
 
     // Calculate totals by category
@@ -81,74 +128,124 @@ export async function generateSpendingInsights(expenses: any[]): Promise<string[
 
     const topCategories = Object.entries(categoryTotals)
       .sort(([, a], [, b]) => b - a)
-      .slice(0, 3)
-      .map(([cat, amount]) => `${cat}: ₹${amount.toFixed(2)}`);
+      .slice(0, 5)
+      .map(([cat, amount]) => `${cat}: ₹${amount.toFixed(0)}`);
 
-    const prompt = `You are a financial advisor. Analyze this spending data and provide 3-4 concise, actionable insights in Indian Rupees (₹).
+    // Calculate category percentages for context
+    const categoryPercentages = Object.entries(categoryTotals)
+      .map(([cat, amount]) => `${cat}: ${((amount / totalSpent) * 100).toFixed(1)}%`)
+      .join(', ');
 
-Total spent: ₹${totalSpent.toFixed(2)}
-Number of expenses: ${expenses.length}
-Top spending categories: ${topCategories.join(', ')}
+    const prompt = `${context.persona}
 
-Provide insights as a JSON array of strings. Each insight should be:
-- One sentence
-- Actionable and helpful
-- Focused on spending patterns or recommendations
-- Use ₹ symbol for amounts
+You're analyzing ${context.label.toUpperCase()} budget spending data. Focus on ${context.focusAreas}.
 
-Example format: ["You spent 40% on dining - consider meal planning", "Transportation costs are high - explore carpooling"]
+📊 SPENDING DATA:
+- Total spent: ₹${totalSpent.toFixed(0)}
+- Number of transactions: ${expenses.length}
+- Top categories: ${topCategories.join(', ')}
+- Category breakdown: ${categoryPercentages}
 
-Respond with ONLY the JSON array, no other text.`;
+🎯 TASK: Generate 3-4 smart, engaging insights specific to ${context.label.toLowerCase()} spending.
+
+GUIDELINES:
+- Start each insight with a relevant emoji
+- Be specific and actionable
+- Reference the actual spending categories and amounts
+- For ${context.label} budgets, focus on: ${context.focusAreas}
+- Suggest practical tips like: ${context.savingsTips}
+- Use ₹ symbol for all amounts
+- Make insights conversational and encouraging
+- ${budgetType === 'family' ? 'Consider family needs and shared expenses' : 'Focus on personal goals and individual habits'}
+
+FORMAT: JSON array of strings
+Example: ["🍽️ Dining takes up 35% of spending - family meal prep could save ₹2,000/month!", "⚡ Great job keeping utilities under control!"]
+
+Respond with ONLY the JSON array.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = stripMarkdown(response.text());
 
-    // Parse JSON response
     const insights = JSON.parse(text);
-    return Array.isArray(insights) ? insights : ['Unable to generate insights at this time.'];
+    return Array.isArray(insights) ? insights : [`${context.emoji} Unable to generate insights at this time.`];
   } catch (error) {
     console.error('Error generating insights:', error);
-    return ['Unable to generate insights. Please try again later.'];
+    return ['💡 Unable to generate insights. Please try again later.'];
   }
 }
 
 /**
- * Suggest budget amounts based on spending history
+ * Suggest budget amounts based on spending history (budget-type aware)
  */
-export async function suggestBudget(expenses: any[], currentBudget?: number): Promise<{
+export async function suggestBudget(
+  expenses: any[],
+  currentBudget?: number,
+  budgetType: BudgetType = 'personal'
+): Promise<{
   suggestedAmount: number;
   reasoning: string;
+  tips: string[];
 }> {
   try {
+    const context = getBudgetTypeContext(budgetType);
+    const defaultBudget = budgetType === 'family' ? 50000 : 15000;
+
     if (expenses.length === 0) {
       return {
-        suggestedAmount: currentBudget || 10000,
-        reasoning: 'Start with a baseline budget and adjust as you track expenses.',
+        suggestedAmount: currentBudget || defaultBudget,
+        reasoning: budgetType === 'family'
+          ? `${context.emoji} Start with ₹${defaultBudget.toLocaleString('en-IN')} for your family budget and adjust as you track household expenses.`
+          : `${context.emoji} Start with ₹${defaultBudget.toLocaleString('en-IN')} for your personal budget and adjust based on your spending habits.`,
+        tips: budgetType === 'family'
+          ? ['Track groceries and utilities first', 'Include children\'s education expenses', 'Plan for family healthcare']
+          : ['Track your daily expenses', 'Note your subscription costs', 'Monitor entertainment spending'],
       };
     }
 
-    // Calculate average monthly spending
+    // Calculate spending metrics
     const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const avgSpending = totalSpent / expenses.length;
 
-    const prompt = `You are a financial advisor. Based on spending history, suggest a realistic monthly budget.
+    // Group by category
+    const categoryTotals: Record<string, number> = {};
+    expenses.forEach((exp) => {
+      categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
+    });
 
-Total spent: ₹${totalSpent.toFixed(2)}
-Number of expenses: ${expenses.length}
-Average per expense: ₹${avgSpending.toFixed(2)}
-Current budget: ₹${currentBudget || 'Not set'}
+    const topCategories = Object.entries(categoryTotals)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3)
+      .map(([cat, amt]) => `${cat}: ₹${amt.toFixed(0)}`);
 
-Provide a response in JSON format:
+    const prompt = `${context.persona}
+
+You're providing a ${context.label.toUpperCase()} budget recommendation. Focus on ${context.focusAreas}.
+
+📊 SPENDING HISTORY:
+- Total spent: ₹${totalSpent.toFixed(0)}
+- Number of expenses: ${expenses.length}
+- Average per expense: ₹${avgSpending.toFixed(0)}
+- Current budget: ${currentBudget ? `₹${currentBudget.toLocaleString('en-IN')}` : 'Not set'}
+- Top spending areas: ${topCategories.join(', ')}
+
+🎯 TASK: Suggest a realistic ${context.label.toLowerCase()} monthly budget with helpful tips.
+
+GUIDELINES:
+- The amount should be realistic (10-20% buffer over typical spending)
+- ${budgetType === 'family' ? 'Account for household essentials, unexpected family needs, and shared goals' : 'Account for personal goals, savings, and some flexibility for treats'}
+- Provide a warm, encouraging reasoning with emoji
+- Include 2-3 actionable tips specific to ${context.label.toLowerCase()} budgeting
+- Use ₹ symbol and Indian formatting
+
+FORMAT: JSON object
 {
   "suggestedAmount": <number>,
-  "reasoning": "<one sentence explanation>"
+  "reasoning": "<encouraging 1-2 sentence explanation with emoji>",
+  "tips": ["<tip 1 with emoji>", "<tip 2 with emoji>", "<tip 3 with emoji>"]
 }
 
-The suggested amount should be realistic and slightly higher than average spending to allow flexibility.
-Use Indian Rupees (₹) in the reasoning.
-
-Respond with ONLY the JSON object, no other text.`;
+Respond with ONLY the JSON object.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -156,49 +253,85 @@ Respond with ONLY the JSON object, no other text.`;
 
     const suggestion = JSON.parse(text);
     return {
-      suggestedAmount: suggestion.suggestedAmount || currentBudget || 10000,
-      reasoning: suggestion.reasoning || 'Based on your spending patterns.',
+      suggestedAmount: suggestion.suggestedAmount || currentBudget || defaultBudget,
+      reasoning: suggestion.reasoning || `${context.emoji} Based on your ${context.label.toLowerCase()} spending patterns.`,
+      tips: Array.isArray(suggestion.tips) ? suggestion.tips : [],
     };
   } catch (error) {
     console.error('Error suggesting budget:', error);
     return {
-      suggestedAmount: currentBudget || 10000,
-      reasoning: 'Unable to generate recommendation. Please try again later.',
+      suggestedAmount: currentBudget || (budgetType === 'family' ? 50000 : 15000),
+      reasoning: '💡 Unable to generate recommendation. Please try again later.',
+      tips: [],
     };
   }
 }
 
 /**
- * Generate spending alerts and warnings
+ * Generate spending alerts and warnings (budget-type aware)
  */
 export async function generateSpendingAlerts(
   expenses: any[],
   budget: number,
-  daysLeftInMonth: number
+  daysLeftInMonth: number,
+  budgetType: BudgetType = 'personal'
 ): Promise<string[]> {
   try {
+    const context = getBudgetTypeContext(budgetType);
     const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const percentageSpent = (totalSpent / budget) * 100;
+    const daysElapsed = Math.max(30 - daysLeftInMonth, 1);
     const dailyBudget = budget / 30;
-    const dailySpending = totalSpent / (30 - daysLeftInMonth);
+    const dailySpending = totalSpent / daysElapsed;
+    const remaining = budget - totalSpent;
+    const dailyAllowance = daysLeftInMonth > 0 ? remaining / daysLeftInMonth : 0;
 
-    const prompt = `You are a financial advisor. Generate 2-3 smart spending alerts based on this data:
+    // Calculate category breakdown for context
+    const categoryTotals: Record<string, number> = {};
+    expenses.forEach((exp) => {
+      categoryTotals[exp.category] = (categoryTotals[exp.category] || 0) + exp.amount;
+    });
 
-Budget: ₹${budget}
-Spent so far: ₹${totalSpent.toFixed(2)} (${percentageSpent.toFixed(1)}%)
-Days left in month: ${daysLeftInMonth}
-Daily budget: ₹${dailyBudget.toFixed(2)}
-Current daily spending: ₹${dailySpending.toFixed(2)}
+    const topCategory = Object.entries(categoryTotals)
+      .sort(([, a], [, b]) => b - a)[0];
 
-Provide alerts as a JSON array of strings. Each alert should be:
-- Concise (one sentence)
-- Actionable
+    const topCategoryInfo = topCategory
+      ? `${topCategory[0]}: ₹${topCategory[1].toFixed(0)} (${((topCategory[1] / totalSpent) * 100).toFixed(0)}%)`
+      : 'No expenses yet';
+
+    const prompt = `${context.persona}
+
+You're generating ${context.label.toUpperCase()} budget alerts. Focus on ${context.focusAreas}.
+
+📊 CURRENT STATUS:
+- Budget: ₹${budget.toLocaleString('en-IN')}
+- Spent: ₹${totalSpent.toFixed(0)} (${percentageSpent.toFixed(0)}%)
+- Remaining: ₹${remaining.toFixed(0)}
+- Days left: ${daysLeftInMonth}
+- Daily allowance: ₹${dailyAllowance.toFixed(0)}/day
+- Top spending: ${topCategoryInfo}
+- Avg daily spending: ₹${dailySpending.toFixed(0)}
+
+🎯 TASK: Generate 2-3 smart, engaging alerts for ${context.label.toLowerCase()} budget.
+
+ALERT TYPES:
+${percentageSpent > 90 ? '🚨 CRITICAL: Budget almost exhausted!' : ''}
+${percentageSpent > 75 && percentageSpent <= 90 ? '⚠️ WARNING: Spending is high' : ''}
+${percentageSpent <= 50 ? '✅ ON TRACK: Good spending control' : ''}
+${dailySpending > dailyBudget * 1.5 ? '📈 OVERSPENDING: Daily rate too high' : ''}
+
+GUIDELINES:
+- Start each alert with appropriate emoji (🚨⚠️💡✅📊🎯)
+- Be specific with numbers and percentages
+- ${budgetType === 'family' ? 'Consider household priorities like groceries, utilities, children\'s needs' : 'Focus on personal spending habits and goals'}
+- Suggest actionable tips related to: ${context.savingsTips}
+- Be encouraging but honest
 - Use ₹ symbol
-- Include warnings if overspending or tips if doing well
 
-Example: ["Warning: You've spent 80% of budget with 15 days left", "Tip: Reduce dining out to stay on track"]
+FORMAT: JSON array of 2-3 strings
+Example: ["⚠️ Family groceries took 45% of budget - try meal planning!", "💡 You have ₹500/day for remaining expenses"]
 
-Respond with ONLY the JSON array, no other text.`;
+Respond with ONLY the JSON array.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
