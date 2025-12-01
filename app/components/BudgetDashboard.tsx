@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { formatINR } from '@/lib/currency';
 import ThemeToggle from './ThemeToggle';
 import AIInsights from './AIInsights';
@@ -54,6 +54,9 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
     reasoning: string;
   } | null>(null);
   const [loadingRecommendation, setLoadingRecommendation] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // Sync external budgetType changes
   useEffect(() => {
@@ -61,6 +64,23 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       setBudgetType(externalBudgetType);
     }
   }, [externalBudgetType]);
+
+  // Close export menu on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
+        setShowExportMenu(false);
+      }
+    };
+
+    if (showExportMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showExportMenu]);
 
   const handleTabChange = (newType: 'personal' | 'family') => {
     setBudgetType(newType);
@@ -263,6 +283,57 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
     }
   };
 
+  // Export expenses handler
+  const handleExport = async (format: 'csv' | 'json') => {
+    setExporting(true);
+    setShowExportMenu(false);
+
+    try {
+      const token = await storage.getItem('accessToken');
+      if (!token) {
+        setError('Not authenticated');
+        return;
+      }
+
+      // Get date range for current month
+      const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+
+      const response = await fetch(
+        `/api/analytics/export?format=${format}&budgetType=${budgetType}&month=${month}&year=${year}&startDate=${startDate}&endDate=${endDate}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      // Get the filename from Content-Disposition header
+      const contentDisposition = response.headers.get('Content-Disposition');
+      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
+      const filename = filenameMatch ? filenameMatch[1] : `expenses-${budgetType}-${month}-${year}.${format}`;
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error('Export error:', err);
+      setError('Failed to export expenses');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</div>;
   }
@@ -283,12 +354,12 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header with Theme Toggle - Mobile Optimized */}
+      {/* Header with Theme Toggle and Export - Mobile Optimized */}
       <div className="flex justify-between items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
-            budgetType === 'family' 
-              ? 'bg-gradient-to-br from-purple-500 to-pink-600' 
+            budgetType === 'family'
+              ? 'bg-gradient-to-br from-purple-500 to-pink-600'
               : 'bg-gradient-to-br from-blue-500 to-indigo-600'
           }`}>
             <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -304,7 +375,72 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize">{budgetType} Budget</p>
           </div>
         </div>
-        <div className="shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Export Button with Dropdown */}
+          <div className="relative" ref={exportMenuRef}>
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={exporting}
+              className={`p-2.5 sm:px-3 sm:py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5 ${
+                budgetType === 'family'
+                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50'
+                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50'
+              }`}
+              title={`Export ${budgetType} expenses`}
+            >
+              {exporting ? (
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+              )}
+              <span className="hidden sm:inline">{exporting ? 'Exporting...' : 'Export'}</span>
+            </button>
+
+            {/* Export Dropdown Menu */}
+            {showExportMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Export {budgetType === 'family' ? '👨‍👩‍👧‍👦 Family' : '👤 Personal'} Expenses
+                  </p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                    {new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year}
+                  </p>
+                </div>
+                <div className="p-1">
+                  <button
+                    onClick={() => handleExport('csv')}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <span className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                      <span className="text-sm">📊</span>
+                    </span>
+                    <div>
+                      <p className="font-medium">CSV Format</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Excel, Google Sheets</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handleExport('json')}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                      <span className="text-sm">📋</span>
+                    </span>
+                    <div>
+                      <p className="font-medium">JSON Format</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">For developers</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <ThemeToggle />
         </div>
       </div>

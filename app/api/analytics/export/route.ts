@@ -5,6 +5,8 @@ import Papa from 'papaparse';
 
 const prisma = new PrismaClient();
 
+type BudgetType = 'personal' | 'family';
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await withAuth(request);
@@ -18,8 +20,22 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Build query
-    const where: any = { userId: auth.userId };
+    // Get budget type parameter (defaults to 'personal' for backward compatibility)
+    const budgetTypeParam = searchParams.get('budgetType');
+    const budgetType: BudgetType = budgetTypeParam === 'family' ? 'family' : 'personal';
+
+    // Get optional month/year for filename
+    const monthParam = searchParams.get('month');
+    const yearParam = searchParams.get('year');
+    const month = monthParam ? parseInt(monthParam) : new Date().getMonth() + 1;
+    const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
+
+    // Build query with budgetType filter
+    const where: any = {
+      userId: auth.userId,
+      budgetType: budgetType,
+    };
+
     if (startDate) {
       where.date = { gte: new Date(startDate) };
     }
@@ -31,38 +47,65 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch expenses
+    // Fetch expenses filtered by budget type
     const expenses = await prisma.expense.findMany({
       where,
       orderBy: { date: 'desc' },
     });
 
-    // Log audit event
+    // Calculate summary statistics
+    const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const expenseCount = expenses.length;
+    const categories = [...new Set(expenses.map(exp => exp.category))];
+    const categoryBreakdown = expenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Log audit event with budget type
     await logAuditEvent(
       auth.userId,
       'EXPORT_DATA',
       'expense',
       undefined,
-      { format, count: expenses.length },
+      { format, count: expenses.length, budgetType },
       ip
     );
 
-    if (format === 'csv') {
-      const csv = Papa.unparse(
-        expenses.map((exp) => ({
-          Date: exp.date.toISOString().split('T')[0],
-          Category: exp.category,
-          Amount: exp.amount,
-          Note: exp.note || '',
-          Recurring: exp.isRecurring ? 'Yes' : 'No',
-        }))
-      );
+    // Generate filename with budget type
+    const paddedMonth = String(month).padStart(2, '0');
+    const baseFilename = `expenses-${budgetType}-${paddedMonth}-${year}`;
 
-      let response = new NextResponse(csv, {
+    if (format === 'csv') {
+      // Add header row with metadata as comments
+      const metadataRows = [
+        ['# Budget App Export'],
+        [`# Budget Type: ${budgetType.charAt(0).toUpperCase() + budgetType.slice(1)}`],
+        [`# Period: ${month}/${year}`],
+        [`# Export Date: ${new Date().toISOString()}`],
+        [`# Total Expenses: ${expenseCount}`],
+        [`# Total Amount: ₹${totalAmount.toLocaleString('en-IN')}`],
+        [''],
+      ];
+
+      const csvData = expenses.map((exp) => ({
+        Date: exp.date.toISOString().split('T')[0],
+        Category: exp.category,
+        Amount: exp.amount,
+        'Budget Type': budgetType.charAt(0).toUpperCase() + budgetType.slice(1),
+        Note: exp.note || '',
+        Recurring: exp.isRecurring ? 'Yes' : 'No',
+      }));
+
+      const csvContent = Papa.unparse(csvData);
+      const metadataText = metadataRows.map(row => row.join(',')).join('\n');
+      const fullCsv = metadataText + csvContent;
+
+      const response = new NextResponse(fullCsv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="expenses-${new Date().toISOString().split('T')[0]}.csv"`,
+          'Content-Disposition': `attachment; filename="${baseFilename}.csv"`,
         },
       });
 
@@ -74,14 +117,46 @@ export async function GET(request: NextRequest) {
     }
 
     if (format === 'json') {
-      let response = NextResponse.json(
-        {
-          success: true,
+      const exportData = {
+        success: true,
+        metadata: {
           exportDate: new Date().toISOString(),
-          expenses,
+          budgetType: budgetType,
+          budgetTypeLabel: budgetType === 'family' ? '👨‍👩‍👧‍👦 Family Budget' : '👤 Personal Budget',
+          period: {
+            month,
+            year,
+            label: `${new Date(year, month - 1).toLocaleString('default', { month: 'long' })} ${year}`,
+          },
         },
-        { status: 200 }
-      );
+        summary: {
+          totalExpenses: expenseCount,
+          totalAmount: totalAmount,
+          totalAmountFormatted: `₹${totalAmount.toLocaleString('en-IN')}`,
+          categories: categories,
+          categoryCount: categories.length,
+          categoryBreakdown: categoryBreakdown,
+        },
+        expenses: expenses.map(exp => ({
+          id: exp.id,
+          date: exp.date.toISOString(),
+          dateFormatted: exp.date.toISOString().split('T')[0],
+          category: exp.category,
+          amount: exp.amount,
+          amountFormatted: `₹${exp.amount.toLocaleString('en-IN')}`,
+          budgetType: exp.budgetType,
+          note: exp.note || '',
+          isRecurring: exp.isRecurring,
+        })),
+      };
+
+      const response = new NextResponse(JSON.stringify(exportData, null, 2), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Disposition': `attachment; filename="${baseFilename}.json"`,
+        },
+      });
 
       Object.entries(getSecureHeaders()).forEach(([key, value]) => {
         response.headers.set(key, value);
