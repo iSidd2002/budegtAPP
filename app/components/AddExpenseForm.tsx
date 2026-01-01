@@ -315,13 +315,24 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
               </div>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">₹</span>
+                {/*
+                  Keyboard strategy for math expressions:
+                  - type="text" allows any characters including math operators
+                  - pattern attribute hints at valid characters without restricting input
+                  - inputMode is intentionally omitted to let each platform decide:
+                    - iOS: Shows standard keyboard with easy access to numbers/symbols
+                    - Android: Shows alphanumeric keyboard with symbol access
+                  - For pure numeric input, inputMode="decimal" would be better,
+                    but it blocks +, -, *, / operators needed for math expressions
+                */}
                 <input
                   type="text"
-                  inputMode="text"
+                  pattern="[0-9+\-*/().\s]*"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck={false}
+                  enterKeyHint="done"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
                   onBlur={handleAmountBlur}
