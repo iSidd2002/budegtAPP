@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatINR } from '@/lib/currency';
+import { formatINR, formatCompactINR } from '@/lib/currency';
 
 interface AppleFitnessRingsProps {
   // Budget Ring Data
@@ -257,45 +257,66 @@ export default function AppleFitnessRings({
         </svg>
 
         {/* Center Content - Remaining Budget - Positioned inside inner ring */}
-        <div
-          className="absolute flex flex-col items-center justify-center pointer-events-none z-10"
-          style={{
-            // Position centered within the innermost ring (radius3 - strokeWidth/2)
-            // Calculate the inner circle area where text can safely display
-            width: isMobile ? '100px' : '120px',
-            height: isMobile ? '100px' : '120px',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        >
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500">
-            <span
-              className="font-bold uppercase tracking-widest text-muted-foreground"
-              style={{ fontSize: isMobile ? '9px' : '11px', marginBottom: isMobile ? '3px' : '5px' }}
+        {(() => {
+          const remainingAmount = Math.abs(budgetAmount - totalSpent);
+          // Use compact format for large amounts to prevent overflow
+          const displayAmount = remainingAmount >= 10000
+            ? formatCompactINR(remainingAmount)
+            : formatINR(remainingAmount);
+          // Dynamic font sizing based on text length
+          const textLength = displayAmount.length;
+          let fontSize: number;
+          if (textLength <= 6) {
+            fontSize = isMobile ? 22 : 28;
+          } else if (textLength <= 8) {
+            fontSize = isMobile ? 18 : 24;
+          } else if (textLength <= 10) {
+            fontSize = isMobile ? 16 : 20;
+          } else {
+            fontSize = isMobile ? 14 : 17;
+          }
+
+          return (
+            <div
+              className="absolute flex flex-col items-center justify-center pointer-events-none z-10"
+              style={{
+                // Increased size to fit larger text
+                width: isMobile ? '130px' : '150px',
+                height: isMobile ? '110px' : '130px',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
             >
-              Remaining
-            </span>
-            <span
-              className={`font-bold tabular-nums tracking-tight ${
-                (budgetAmount - totalSpent) < 0
-                  ? 'text-[#FA114F] dark:text-[#FF4581]'
-                  : 'text-foreground'
-              }`}
-              style={{ fontSize: isMobile ? '20px' : '26px' }}
-            >
-              {formatINR(Math.abs(budgetAmount - totalSpent))}
-            </span>
-            {isOverBudget && (
-              <span
-                className="font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] animate-pulse"
-                style={{ fontSize: isMobile ? '8px' : '10px', marginTop: isMobile ? '3px' : '5px' }}
-              >
-                Over Budget
-              </span>
-            )}
-          </div>
-        </div>
+              <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500 text-center">
+                <span
+                  className="font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap"
+                  style={{ fontSize: isMobile ? '9px' : '11px', marginBottom: isMobile ? '2px' : '4px' }}
+                >
+                  Remaining
+                </span>
+                <span
+                  className={`font-bold tabular-nums tracking-tight whitespace-nowrap ${
+                    (budgetAmount - totalSpent) < 0
+                      ? 'text-[#FA114F] dark:text-[#FF4581]'
+                      : 'text-foreground'
+                  }`}
+                  style={{ fontSize: `${fontSize}px`, lineHeight: 1.1 }}
+                >
+                  {displayAmount}
+                </span>
+                {isOverBudget && (
+                  <span
+                    className="font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] animate-pulse whitespace-nowrap"
+                    style={{ fontSize: isMobile ? '8px' : '10px', marginTop: isMobile ? '2px' : '4px' }}
+                  >
+                    Over Budget
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Detailed Stats Legend - Apple Style - Mobile Optimized */}
