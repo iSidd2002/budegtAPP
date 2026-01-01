@@ -8,15 +8,19 @@
  */
 export function formatINR(amount: number): string {
   if (isNaN(amount)) return '₹0';
-  
+
+  // Handle negative numbers
+  const isNegative = amount < 0;
+  const absAmount = Math.abs(amount);
+
   // Convert to string and split into integer and decimal parts
-  const [integerPart, decimalPart] = amount.toFixed(2).split('.');
-  
+  const [integerPart, decimalPart] = absAmount.toFixed(2).split('.');
+
   // Format integer part with Indian numbering system
   const formattedInteger = formatIndianNumber(integerPart);
-  
-  // Combine with decimal part
-  return `₹${formattedInteger}.${decimalPart}`;
+
+  // Combine with decimal part and add negative sign if needed
+  return `₹${isNegative ? '-' : ''}${formattedInteger}.${decimalPart}`;
 }
 
 /**
