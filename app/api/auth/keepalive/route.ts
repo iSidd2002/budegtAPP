@@ -1,19 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { verifyAccessToken } from '@/lib/auth';
-import { getSecureHeaders } from '@/lib/middleware';
+import { getSecureHeaders, withRateLimit, getClientIp } from '@/lib/middleware';
 
-const prisma = new PrismaClient();
+// Configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_KEEPALIVES = 10; // 10 per minute max
 
 /**
  * Session Keepalive Endpoint
- * 
+ *
  * Purpose: Prevent iOS from deleting PWA storage by maintaining active session
- * 
+ *
  * iOS PWA Issue:
  * - iOS deletes IndexedDB/localStorage after ~7 days of inactivity
  * - This causes users to lose authentication tokens
- * 
+ *
  * Solution:
  * - Client calls this endpoint periodically (every app open)
  * - Updates session's updatedAt timestamp
@@ -21,29 +23,45 @@ const prisma = new PrismaClient();
  * - Helps prevent aggressive storage eviction
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+
   try {
+    // Rate limiting to prevent DoS
+    const rateLimitCheck = withRateLimit(`keepalive:${ip}`, RATE_LIMIT_MAX_KEEPALIVES, RATE_LIMIT_WINDOW_MS);
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitCheck.retryAfter),
+            ...getSecureHeaders(),
+          }
+        }
+      );
+    }
+
     // Get access token from Authorization header
     const authHeader = request.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'Authorization header required' },
-        { status: 401 }
+        { status: 401, headers: getSecureHeaders() }
       );
     }
 
     const accessToken = authHeader.substring(7);
-    
+
     // Verify access token
     const payload = verifyAccessToken(accessToken);
     if (!payload || !payload.userId) {
       return NextResponse.json(
         { error: 'Invalid access token' },
-        { status: 401 }
+        { status: 401, headers: getSecureHeaders() }
       );
     }
 
     // Update session's updatedAt timestamp
-    // This keeps the session "active" in the database
     const updatedSessions = await prisma.session.updateMany({
       where: {
         userId: payload.userId,
@@ -54,8 +72,6 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       },
     });
-
-    console.log(`[Keepalive] Updated ${updatedSessions.count} sessions for user ${payload.userId}`);
 
     let response = NextResponse.json(
       {
@@ -73,10 +89,13 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('[Keepalive] Error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Keepalive] Error:', error);
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: getSecureHeaders() }
     );
   }
 }

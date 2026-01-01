@@ -1,34 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { withAuth, logAuditEvent, getClientIp, getSecureHeaders } from '@/lib/middleware';
 
-const prisma = new PrismaClient();
-
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const userAgent = request.headers.get('user-agent') || undefined;
+
   try {
     const auth = await withAuth(request);
     if ('error' in auth) {
-      return NextResponse.json({ error: auth.error }, { status: auth.status });
+      // Still clear cookies even if auth fails
+      let response = NextResponse.json(
+        { error: auth.error },
+        { status: auth.status, headers: getSecureHeaders() }
+      );
+      response.cookies.set('refreshToken', '', { maxAge: 0, path: '/' });
+      return response;
     }
 
-    const ip = getClientIp(request);
-
-    // Revoke all sessions for this user
-    await prisma.session.updateMany({
-      where: { userId: auth.userId },
+    // Revoke all sessions for this user (logout everywhere)
+    const revokedCount = await prisma.session.updateMany({
+      where: {
+        userId: auth.userId,
+        revokedAt: null, // Only revoke active sessions
+      },
       data: { revokedAt: new Date() },
     });
 
     // Log audit event
-    await logAuditEvent(auth.userId, 'LOGOUT', 'auth', auth.userId, {}, ip);
+    await logAuditEvent(
+      auth.userId,
+      'LOGOUT',
+      'auth',
+      auth.userId,
+      { sessionsRevoked: revokedCount.count },
+      ip,
+      userAgent
+    );
 
-    // Clear cookies
+    // Build response
     let response = NextResponse.json(
-      { success: true, message: 'Logged out successfully' },
+      {
+        success: true,
+        message: 'Logged out successfully',
+        sessionsRevoked: revokedCount.count,
+      },
       { status: 200 }
     );
 
-    response.cookies.set('refreshToken', '', { maxAge: 0, path: '/' });
+    // Clear refresh token cookie
+    response.cookies.set('refreshToken', '', {
+      maxAge: 0,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
 
     // Add security headers
     Object.entries(getSecureHeaders()).forEach(([key, value]) => {
@@ -37,11 +64,17 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Logout error:', error);
-    return NextResponse.json(
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Logout error:', error);
+    }
+
+    // Still try to clear cookies on error
+    let response = NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: getSecureHeaders() }
     );
+    response.cookies.set('refreshToken', '', { maxAge: 0, path: '/' });
+    return response;
   }
 }
 

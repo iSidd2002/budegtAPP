@@ -1,73 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import { generateAccessToken, generateRefreshToken, hashRefreshToken, verifyRefreshToken, generateSessionExpiry } from '@/lib/auth';
-import { setSecureCookie, logAuditEvent, getClientIp, getSecureHeaders } from '@/lib/middleware';
+import prisma from '@/lib/prisma';
+import { generateAccessToken, generateRefreshToken, hashRefreshTokenForStorage, generateSessionExpiry } from '@/lib/auth';
+import { setSecureCookie, logAuditEvent, getClientIp, getSecureHeaders, withRateLimit } from '@/lib/middleware';
 
-const prisma = new PrismaClient();
+// Configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX_REFRESHES = 30; // Allow 30 refreshes per minute
 
 export async function POST(request: NextRequest) {
-  try {
-    const ip = getClientIp(request);
+  const ip = getClientIp(request);
+  const userAgent = request.headers.get('user-agent') || undefined;
 
-    // Get refresh token from cookie or body
+  try {
+    // Rate limiting to prevent token refresh abuse
+    const rateLimitCheck = withRateLimit(`refresh:${ip}`, RATE_LIMIT_MAX_REFRESHES, RATE_LIMIT_WINDOW_MS);
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many refresh attempts. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitCheck.retryAfter),
+            ...getSecureHeaders(),
+          }
+        }
+      );
+    }
+
+    // Get refresh token from cookie (preferred) or body (PWA fallback)
     const refreshTokenFromCookie = request.cookies.get('refreshToken')?.value;
     const body = await request.json().catch(() => ({}));
     const refreshToken = refreshTokenFromCookie || body.refreshToken;
 
-    console.log('[Refresh API] Has cookie refreshToken:', !!refreshTokenFromCookie);
-    console.log('[Refresh API] Has body refreshToken:', !!body.refreshToken);
-    console.log('[Refresh API] Using refreshToken from:', refreshTokenFromCookie ? 'cookie' : 'body');
-
     if (!refreshToken) {
-      console.log('[Refresh API] No refresh token provided');
       return NextResponse.json(
         { error: 'Refresh token is required' },
-        { status: 401 }
+        { status: 401, headers: getSecureHeaders() }
       );
     }
 
-    // Find session
-    const session = await prisma.session.findUnique({
-      where: { refreshToken },
+    // Hash the incoming token for lookup (since we store hashes, not plaintext)
+    const tokenHash = hashRefreshTokenForStorage(refreshToken);
+
+    // Find session by refresh token hash
+    const session = await prisma.session.findFirst({
+      where: {
+        refreshToken: tokenHash, // Now comparing hashes
+        revokedAt: null,
+        expiresAt: { gte: new Date() },
+      },
       include: { user: true },
     });
 
-    console.log('[Refresh API] Session found:', !!session);
-    if (session) {
-      console.log('[Refresh API] Session revoked:', !!session.revokedAt);
-      console.log('[Refresh API] Session expired:', session.expiresAt < new Date());
-    }
+    if (!session) {
+      // Log potential token reuse attempt (could indicate token theft)
+      await logAuditEvent(
+        'unknown',
+        'TOKEN_REFRESH_FAILED',
+        'auth',
+        undefined,
+        { reason: 'Invalid or expired token' },
+        ip,
+        userAgent
+      );
 
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
-      console.log('[Refresh API] Session invalid or expired');
       return NextResponse.json(
         { error: 'Invalid or expired refresh token' },
-        { status: 401 }
+        { status: 401, headers: getSecureHeaders() }
       );
     }
 
-    // Verify refresh token hash
-    const tokenValid = await verifyRefreshToken(refreshToken, session.refreshTokenHash);
-    if (!tokenValid) {
-      return NextResponse.json(
-        { error: 'Invalid refresh token' },
-        { status: 401 }
-      );
-    }
-
-    // Rotate refresh token (revoke old, create new)
+    // Revoke old session (token rotation)
     await prisma.session.update({
       where: { id: session.id },
       data: { revokedAt: new Date() },
     });
 
+    // Generate new tokens
     const newRefreshToken = generateRefreshToken();
-    const newRefreshTokenHash = await hashRefreshToken(newRefreshToken);
+    const newRefreshTokenHash = hashRefreshTokenForStorage(newRefreshToken);
 
     await prisma.session.create({
       data: {
         userId: session.userId,
-        refreshToken: newRefreshToken,
+        refreshToken: newRefreshTokenHash,
         refreshTokenHash: newRefreshTokenHash,
         expiresAt: generateSessionExpiry(),
       },
@@ -76,24 +92,26 @@ export async function POST(request: NextRequest) {
     // Generate new access token
     const accessToken = generateAccessToken(session.userId);
 
-    // Log audit event
-    await logAuditEvent(session.userId, 'TOKEN_REFRESH', 'auth', session.userId, {}, ip);
+    // Log successful refresh
+    await logAuditEvent(session.userId, 'TOKEN_REFRESH', 'auth', session.userId, {}, ip, userAgent);
 
-    // Set new refresh token cookie
+    // Build response - refresh token in body for iOS PWA compatibility
+    // See login/route.ts for full security rationale
     let response = NextResponse.json(
       {
         success: true,
         accessToken,
-        refreshToken: newRefreshToken, // Send new refresh token in response for localStorage storage (PWA compatibility)
+        refreshToken: newRefreshToken, // Required for iOS PWA IndexedDB storage
       },
       { status: 200 }
     );
 
+    // Set new refresh token in httpOnly cookie
     response = setSecureCookie(response, 'refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
-      maxAge: 90 * 24 * 60 * 60, // 90 days - extended for iOS PWA compatibility
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60, // 90 days
     });
 
     // Add security headers
@@ -103,10 +121,13 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Refresh token error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Refresh token error:', error);
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: getSecureHeaders() }
     );
   }
 }

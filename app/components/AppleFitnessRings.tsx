@@ -80,13 +80,13 @@ export default function AppleFitnessRings({
   // SVG Configuration - Fixed viewBox, responsive container
   // ====================
   // Use a fixed viewBox size for consistent rendering
-  const size = 280;
+  const size = 320;
   const center = size / 2;
-  const strokeWidth = 18;
-  const ringGap = 6;
+  const strokeWidth = 22;
+  const ringGap = 8;
 
-  // Ring radii (from outer to inner) - Fixed values for consistent viewBox
-  const radius1 = 110; // Budget (outer)
+  // Ring radii (from outer to inner) - Larger values for more prominent rings
+  const radius1 = 135; // Budget (outer) - increased
   const radius2 = radius1 - strokeWidth - ringGap; // Time (middle)
   const radius3 = radius2 - strokeWidth - ringGap; // Category (inner)
 
@@ -106,8 +106,8 @@ export default function AppleFitnessRings({
       <div
         className="relative mx-auto"
         style={{
-          width: isMobile ? '200px' : '240px',
-          height: isMobile ? '200px' : '240px',
+          width: isMobile ? '260px' : '300px',
+          height: isMobile ? '260px' : '300px',
         }}
       >
         <svg
@@ -256,12 +256,23 @@ export default function AppleFitnessRings({
           />
         </svg>
 
-        {/* Center Content - Remaining Budget - Responsive */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500 px-1">
+        {/* Center Content - Remaining Budget - Positioned inside inner ring */}
+        <div
+          className="absolute flex flex-col items-center justify-center pointer-events-none z-10"
+          style={{
+            // Position centered within the innermost ring (radius3 - strokeWidth/2)
+            // Calculate the inner circle area where text can safely display
+            width: isMobile ? '100px' : '120px',
+            height: isMobile ? '100px' : '120px',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500">
             <span
               className="font-bold uppercase tracking-widest text-muted-foreground"
-              style={{ fontSize: isMobile ? '8px' : '10px', marginBottom: isMobile ? '2px' : '4px' }}
+              style={{ fontSize: isMobile ? '9px' : '11px', marginBottom: isMobile ? '3px' : '5px' }}
             >
               Remaining
             </span>
@@ -271,14 +282,14 @@ export default function AppleFitnessRings({
                   ? 'text-[#FA114F] dark:text-[#FF4581]'
                   : 'text-foreground'
               }`}
-              style={{ fontSize: isMobile ? '18px' : '24px' }}
+              style={{ fontSize: isMobile ? '20px' : '26px' }}
             >
               {formatINR(Math.abs(budgetAmount - totalSpent))}
             </span>
             {isOverBudget && (
               <span
                 className="font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] animate-pulse"
-                style={{ fontSize: isMobile ? '7px' : '9px', marginTop: isMobile ? '2px' : '4px' }}
+                style={{ fontSize: isMobile ? '8px' : '10px', marginTop: isMobile ? '3px' : '5px' }}
               >
                 Over Budget
               </span>

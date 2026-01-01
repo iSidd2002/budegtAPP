@@ -1,18 +1,44 @@
 import { z } from 'zod';
 
+/**
+ * Password validation with security requirements
+ * - Minimum 8 characters
+ * - Maximum 128 characters (prevent DoS via bcrypt)
+ * - At least one lowercase letter
+ * - At least one uppercase letter
+ * - At least one number
+ */
+const passwordSchema = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must not exceed 128 characters')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number');
+
+/**
+ * Email validation with normalization
+ */
+const emailSchema = z
+  .string()
+  .email('Invalid email address')
+  .max(254, 'Email must not exceed 254 characters') // RFC 5321
+  .toLowerCase()
+  .trim();
+
 // Auth schemas
 export const SignupSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export const LoginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  password: z.string().min(1, 'Password is required').max(128, 'Password too long'),
 });
 
 export const RefreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required'),
+  refreshToken: z.string().min(1, 'Refresh token is required').max(100, 'Invalid token format'),
 });
 
 // Budget schemas

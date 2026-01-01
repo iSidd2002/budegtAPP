@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { withAuth, logAuditEvent, getClientIp, getSecureHeaders } from '@/lib/middleware';
 import Papa from 'papaparse';
-
-const prisma = new PrismaClient();
 
 type BudgetType = 'personal' | 'family';
 

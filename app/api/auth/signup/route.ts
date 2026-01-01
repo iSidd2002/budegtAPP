@@ -1,21 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { SignupSchema } from '@/lib/validation';
-import { hashPassword, generateAccessToken, generateRefreshToken, hashRefreshToken, generateSessionExpiry } from '@/lib/auth';
+import { hashPassword, generateAccessToken, generateRefreshToken, hashRefreshTokenForStorage, generateSessionExpiry } from '@/lib/auth';
 import { withRateLimit, setSecureCookie, logAuditEvent, getClientIp, getSecureHeaders } from '@/lib/middleware';
 import { z } from 'zod';
 
-const prisma = new PrismaClient();
+// Configuration
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX_SIGNUPS = 5;
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request);
+  const userAgent = request.headers.get('user-agent') || undefined;
+
   try {
-    // Rate limiting
-    const ip = getClientIp(request);
-    const rateLimitCheck = withRateLimit(`signup:${ip}`, 5, 3600000); // 5 per hour
+    // Rate limiting - stricter for signup to prevent abuse
+    const rateLimitCheck = withRateLimit(`signup:${ip}`, RATE_LIMIT_MAX_SIGNUPS, RATE_LIMIT_WINDOW_MS);
     if (!rateLimitCheck.allowed) {
       return NextResponse.json(
         { error: 'Too many signup attempts. Please try again later.' },
-        { status: 429, headers: { 'Retry-After': String(rateLimitCheck.retryAfter) } }
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateLimitCheck.retryAfter),
+            ...getSecureHeaders(),
+          }
+        }
       );
     }
 
@@ -34,16 +44,19 @@ export async function POST(request: NextRequest) {
         'SIGNUP_FAILED',
         'auth',
         undefined,
-        { reason: 'User already exists', email: validatedData.email },
-        ip
+        { reason: 'Email already registered' }, // Don't log email
+        ip,
+        userAgent
       );
+
+      // Use generic message to prevent email enumeration
       return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 400 }
+        { error: 'Unable to create account. Please try a different email.' },
+        { status: 400, headers: getSecureHeaders() }
       );
     }
 
-    // Hash password
+    // Hash password with bcrypt
     const passwordHash = await hashPassword(validatedData.password);
 
     // Create user
@@ -57,37 +70,39 @@ export async function POST(request: NextRequest) {
     // Generate tokens
     const accessToken = generateAccessToken(user.id);
     const refreshToken = generateRefreshToken();
-    const refreshTokenHash = await hashRefreshToken(refreshToken);
+    const refreshTokenHash = hashRefreshTokenForStorage(refreshToken);
 
-    // Create session
+    // Create session with hashed refresh token
     await prisma.session.create({
       data: {
         userId: user.id,
-        refreshToken,
+        refreshToken: refreshTokenHash,
         refreshTokenHash,
         expiresAt: generateSessionExpiry(),
       },
     });
 
-    // Log audit event
-    await logAuditEvent(user.id, 'SIGNUP', 'auth', user.id, { email: user.email }, ip);
+    // Log successful signup
+    await logAuditEvent(user.id, 'SIGNUP', 'auth', user.id, {}, ip, userAgent);
 
-    // Set secure cookies
+    // Build response - refresh token in body for iOS PWA compatibility
+    // See login/route.ts for full security rationale
     let response = NextResponse.json(
       {
         success: true,
         user: { id: user.id, email: user.email },
         accessToken,
-        refreshToken, // Send refresh token in response for localStorage storage (PWA compatibility)
+        refreshToken, // Required for iOS PWA IndexedDB storage
       },
       { status: 201 }
     );
 
+    // Set refresh token in httpOnly cookie
     response = setSecureCookie(response, 'refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Lax', // Changed from 'Strict' to 'Lax' for PWA compatibility
-      maxAge: 90 * 24 * 60 * 60, // 90 days - extended for iOS PWA compatibility
+      sameSite: 'lax',
+      maxAge: 90 * 24 * 60 * 60, // 90 days
     });
 
     // Add security headers
@@ -100,14 +115,17 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation failed', details: error.errors },
-        { status: 400 }
+        { status: 400, headers: getSecureHeaders() }
       );
     }
 
-    console.error('Signup error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Signup error:', error);
+    }
+
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: getSecureHeaders() }
     );
   }
 }

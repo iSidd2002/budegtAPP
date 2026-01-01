@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { generateSpendingAlerts, BudgetType } from '@/lib/ai';
 import { verifyAccessToken } from '@/lib/auth';
-
-const prisma = new PrismaClient();
 
 // Simple in-memory cache for AI alerts (3 minute TTL)
 const alertsCache = new Map<string, { data: string[]; timestamp: number }>();

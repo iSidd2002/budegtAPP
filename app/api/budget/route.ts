@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { SetBudgetSchema } from '@/lib/validation';
 import { withAuth, logAuditEvent, getClientIp, getSecureHeaders } from '@/lib/middleware';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
 
 // POST: Set budget
 export async function POST(request: NextRequest) {
