@@ -4,17 +4,21 @@ import { useState } from 'react';
 import { useAuth } from '@/app/components/AuthProvider';
 import AddExpenseForm from '../components/AddExpenseForm';
 import BudgetDashboard from '../components/BudgetDashboard';
+import LoansManager from '../components/LoansManager';
 import PWAInstallButton from '../components/PWAInstallButton';
 import { storage } from '@/lib/storage';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';
 
+type MainTab = 'expenses' | 'loans';
+
 export default function Dashboard() {
   const { logout } = useAuth();
   const [refreshKey, setRefreshKey] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [budgetType, setBudgetType] = useState<'personal' | 'family'>('personal');
+  const [mainTab, setMainTab] = useState<MainTab>('expenses');
 
   const handleLogout = async () => {
     await logout();
@@ -100,29 +104,65 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Main Tab Navigation */}
+      <div className="container px-4 sm:px-4 md:px-6 max-w-7xl mx-auto pt-4">
+        <div className="flex gap-2 border-b">
+          <button
+            onClick={() => setMainTab('expenses')}
+            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
+              mainTab === 'expenses'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            💰 Expenses
+            {mainTab === 'expenses' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => setMainTab('loans')}
+            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
+              mainTab === 'loans'
+                ? 'text-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            🤝 Loans
+            {mainTab === 'loans' && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Main Content - Mobile Optimized Margins (16px iPhone safe area, 16dp Android) */}
       <main className="container py-4 sm:py-6 px-4 sm:px-4 md:px-6 lg:py-8 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
-          {/* Add Expense Form - 4 columns on large screens */}
-          <div className="lg:col-span-4 order-1">
-            <div className="lg:sticky lg:top-24">
-              <AddExpenseForm 
-                onSuccess={() => setRefreshKey((k) => k + 1)} 
+        {mainTab === 'expenses' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
+            {/* Add Expense Form - 4 columns on large screens */}
+            <div className="lg:col-span-4 order-1">
+              <div className="lg:sticky lg:top-24">
+                <AddExpenseForm
+                  onSuccess={() => setRefreshKey((k) => k + 1)}
+                  budgetType={budgetType}
+                />
+              </div>
+            </div>
+
+            {/* Dashboard - 8 columns on large screens */}
+            <div className="lg:col-span-8 order-2">
+              <BudgetDashboard
+                key={`${refreshKey}-${budgetType}`}
+                onResetSuccess={() => setRefreshKey((k) => k + 1)}
                 budgetType={budgetType}
+                onBudgetTypeChange={setBudgetType}
               />
             </div>
           </div>
-
-          {/* Dashboard - 8 columns on large screens */}
-          <div className="lg:col-span-8 order-2">
-            <BudgetDashboard
-              key={`${refreshKey}-${budgetType}`}
-              onResetSuccess={() => setRefreshKey((k) => k + 1)}
-              budgetType={budgetType}
-              onBudgetTypeChange={setBudgetType}
-            />
-          </div>
-        </div>
+        ) : (
+          <LoansManager />
+        )}
       </main>
 
       {/* PWA Install Button */}

@@ -79,9 +79,27 @@ export const GetExpensesSchema = z.object({
   offset: z.number().int().nonnegative().optional().default(0),
 });
 
+// Loan schemas
+export const CreateLoanSchema = z.object({
+  borrowerName: z.string()
+    .min(1, 'Borrower name is required')
+    .max(100, 'Borrower name must be 100 characters or less')
+    .trim(),
+  amount: z.number().positive('Amount must be positive'),
+  loanDate: z.string().datetime('Invalid date format'),
+  expectedReturnDate: z.string().datetime('Invalid date format').optional().nullable(),
+  notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
+});
+
+export const UpdateLoanSchema = CreateLoanSchema.partial().extend({
+  isReturned: z.boolean().optional(),
+  returnedDate: z.string().datetime('Invalid date format').optional().nullable(),
+});
+
 export type SignupInput = z.infer<typeof SignupSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type CreateExpenseInput = z.infer<typeof CreateExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof UpdateExpenseSchema>;
 export type SetBudgetInput = z.infer<typeof SetBudgetSchema>;
-
+export type CreateLoanInput = z.infer<typeof CreateLoanSchema>;
+export type UpdateLoanInput = z.infer<typeof UpdateLoanSchema>;

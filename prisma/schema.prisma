@@ -22,6 +22,7 @@ model User {
   expenses              Expense[]
   sessions              Session[]
   auditLogs             AuditLog[]
+  loans                 Loan[]
 }
 
 model Session {
@@ -86,18 +87,39 @@ model AuditLog {
   id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   userId                String    @db.ObjectId
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   action                String    // "LOGIN", "LOGOUT", "EXPENSE_CREATE", "EXPENSE_UPDATE", "EXPENSE_DELETE", "BUDGET_SET"
   resourceType          String?   // "expense", "budget", "auth"
   resourceId            String?
   details               String?   // JSON stringified details
   ipAddress             String?
   userAgent             String?
-  
+
   createdAt             DateTime  @default(now())
-  
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])
+}
+
+model Loan {
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  borrowerName          String    // Name of person who borrowed money
+  amount                Float     // Amount lent
+  loanDate              DateTime  // Date when money was lent
+  expectedReturnDate    DateTime? // Optional expected return date
+  returnedDate          DateTime? // Actual return date (null if not returned)
+  notes                 String?   // Optional notes/description
+  isReturned            Boolean   @default(false)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([isReturned])
+  @@index([loanDate])
 }
 

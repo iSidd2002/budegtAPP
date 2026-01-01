@@ -3,8 +3,17 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Get the Gemini 2.5 Flash model (stable version)
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+// Get the Gemini 2.5 Flash model with thinking disabled for faster responses
+// thinkingBudget: 0 disables thinking mode for simpler, faster responses
+const model = genAI.getGenerativeModel({
+  model: 'gemini-2.5-flash',
+  generationConfig: {
+    // @ts-ignore - thinkingConfig is supported but not in types yet
+    thinkingConfig: {
+      thinkingBudget: 0  // Disable thinking for faster, simpler responses
+    }
+  }
+});
 
 // Budget type definitions for context-aware AI
 export type BudgetType = 'personal' | 'family';
@@ -38,8 +47,29 @@ export const FAMILY_FOCUS_CATEGORIES = [
 
 // Helper function to strip markdown code blocks from AI responses
 function stripMarkdown(text: string): string {
-  // Remove ```json and ``` markers
-  return text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  // Remove ```json, ```javascript, ``` and other code block markers
+  let cleaned = text
+    .replace(/```(?:json|javascript|js)?\s*/gi, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  return cleaned;
+}
+
+// Helper function to safely parse JSON from AI responses
+function safeJsonParse<T>(text: string, fallback: T): T {
+  try {
+    const cleaned = stripMarkdown(text);
+    // Try to extract JSON from the response if it's embedded in text
+    const jsonMatch = cleaned.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error('JSON parse error:', error, 'Text:', text.substring(0, 200));
+    return fallback;
+  }
 }
 
 // Get budget-type specific context for AI prompts
@@ -165,10 +195,10 @@ Respond with ONLY the JSON array.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = stripMarkdown(response.text());
+    const text = response.text();
 
-    const insights = JSON.parse(text);
-    return Array.isArray(insights) ? insights : [`${context.emoji} Unable to generate insights at this time.`];
+    const insights = safeJsonParse<string[]>(text, [`${context.emoji} Unable to generate insights at this time.`]);
+    return Array.isArray(insights) && insights.length > 0 ? insights : [`${context.emoji} Unable to generate insights at this time.`];
   } catch (error) {
     console.error('Error generating insights:', error);
     return ['💡 Unable to generate insights. Please try again later.'];
@@ -249,9 +279,14 @@ Respond with ONLY the JSON object.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = stripMarkdown(response.text());
+    const text = response.text();
 
-    const suggestion = JSON.parse(text);
+    const fallback = {
+      suggestedAmount: currentBudget || defaultBudget,
+      reasoning: `${context.emoji} Based on your ${context.label.toLowerCase()} spending patterns.`,
+      tips: [],
+    };
+    const suggestion = safeJsonParse<typeof fallback>(text, fallback);
     return {
       suggestedAmount: suggestion.suggestedAmount || currentBudget || defaultBudget,
       reasoning: suggestion.reasoning || `${context.emoji} Based on your ${context.label.toLowerCase()} spending patterns.`,
@@ -335,9 +370,9 @@ Respond with ONLY the JSON array.`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = stripMarkdown(response.text());
+    const text = response.text();
 
-    const alerts = JSON.parse(text);
+    const alerts = safeJsonParse<string[]>(text, []);
     return Array.isArray(alerts) ? alerts : [];
   } catch (error) {
     console.error('Error generating alerts:', error);
