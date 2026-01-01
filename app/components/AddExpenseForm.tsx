@@ -317,7 +317,10 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
                 <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">₹</span>
                 <input
                   type="text"
-                  inputMode="decimal"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
                   onBlur={handleAmountBlur}
