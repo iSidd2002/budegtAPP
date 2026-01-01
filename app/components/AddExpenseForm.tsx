@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { storage } from '@/lib/storage';
+import { formatINR } from '@/lib/currency';
 
 interface AddExpenseFormProps {
   onSuccess?: () => void;
@@ -17,8 +18,120 @@ const PREDEFINED_CATEGORIES = [
   'Shopping',
 ];
 
+// Safely evaluate mathematical expressions
+// Only allows numbers and basic operators (+, -, *, /)
+function evaluateExpression(expr: string): { value: number | null; isExpression: boolean; error: string | null } {
+  if (!expr || expr.trim() === '') {
+    return { value: null, isExpression: false, error: null };
+  }
+
+  // Remove all whitespace
+  const cleanExpr = expr.replace(/\s/g, '');
+
+  // Check if it's a simple number
+  const simpleNumber = parseFloat(cleanExpr);
+  if (!isNaN(simpleNumber) && /^-?\d*\.?\d+$/.test(cleanExpr)) {
+    return { value: simpleNumber, isExpression: false, error: null };
+  }
+
+  // Check if expression contains only valid characters (numbers, operators, parentheses, decimal points)
+  if (!/^[\d+\-*/().]+$/.test(cleanExpr)) {
+    return { value: null, isExpression: true, error: 'Invalid characters' };
+  }
+
+  // Check for empty parentheses or invalid operator sequences
+  if (/\(\)/.test(cleanExpr) || /[+\-*/]{2,}/.test(cleanExpr)) {
+    return { value: null, isExpression: true, error: 'Invalid expression' };
+  }
+
+  try {
+    // Tokenize the expression
+    const tokens = cleanExpr.match(/(\d+\.?\d*|[+\-*/()])/g);
+    if (!tokens) {
+      return { value: null, isExpression: true, error: 'Invalid expression' };
+    }
+
+    // Use a simple expression parser (shunting-yard algorithm)
+    const outputQueue: (number | string)[] = [];
+    const operatorStack: string[] = [];
+    const precedence: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 };
+
+    for (const token of tokens) {
+      if (/^\d+\.?\d*$/.test(token)) {
+        outputQueue.push(parseFloat(token));
+      } else if (token === '(') {
+        operatorStack.push(token);
+      } else if (token === ')') {
+        while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1] !== '(') {
+          outputQueue.push(operatorStack.pop()!);
+        }
+        if (operatorStack.length === 0) {
+          return { value: null, isExpression: true, error: 'Mismatched parentheses' };
+        }
+        operatorStack.pop(); // Remove the '('
+      } else if (['+', '-', '*', '/'].includes(token)) {
+        while (
+          operatorStack.length > 0 &&
+          operatorStack[operatorStack.length - 1] !== '(' &&
+          precedence[operatorStack[operatorStack.length - 1]] >= precedence[token]
+        ) {
+          outputQueue.push(operatorStack.pop()!);
+        }
+        operatorStack.push(token);
+      }
+    }
+
+    while (operatorStack.length > 0) {
+      const op = operatorStack.pop()!;
+      if (op === '(' || op === ')') {
+        return { value: null, isExpression: true, error: 'Mismatched parentheses' };
+      }
+      outputQueue.push(op);
+    }
+
+    // Evaluate the RPN expression
+    const evalStack: number[] = [];
+    for (const token of outputQueue) {
+      if (typeof token === 'number') {
+        evalStack.push(token);
+      } else {
+        if (evalStack.length < 2) {
+          return { value: null, isExpression: true, error: 'Invalid expression' };
+        }
+        const b = evalStack.pop()!;
+        const a = evalStack.pop()!;
+        switch (token) {
+          case '+': evalStack.push(a + b); break;
+          case '-': evalStack.push(a - b); break;
+          case '*': evalStack.push(a * b); break;
+          case '/':
+            if (b === 0) {
+              return { value: null, isExpression: true, error: 'Division by zero' };
+            }
+            evalStack.push(a / b);
+            break;
+        }
+      }
+    }
+
+    if (evalStack.length !== 1) {
+      return { value: null, isExpression: true, error: 'Invalid expression' };
+    }
+
+    const result = evalStack[0];
+    if (!isFinite(result)) {
+      return { value: null, isExpression: true, error: 'Result is too large' };
+    }
+
+    // Round to 2 decimal places
+    return { value: Math.round(result * 100) / 100, isExpression: true, error: null };
+  } catch {
+    return { value: null, isExpression: true, error: 'Invalid expression' };
+  }
+}
+
 export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: AddExpenseFormProps) {
-  const [amount, setAmount] = useState('');
+  const [amountInput, setAmountInput] = useState('');
   const [category, setCategory] = useState('Food');
   const [customCategory, setCustomCategory] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -29,6 +142,12 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   const [loading, setLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+
+  // Evaluate the expression in real-time
+  const expressionResult = useMemo(() => evaluateExpression(amountInput), [amountInput]);
+  const calculatedAmount = expressionResult.value;
+  const isExpression = expressionResult.isExpression;
+  const expressionError = expressionResult.error;
 
   // AI category suggestion
   const getAISuggestion = useCallback(async (description: string) => {
@@ -87,6 +206,14 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
       const token = await storage.getItem('accessToken');
       if (!token) {
         setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      // Validate calculated amount
+      if (calculatedAmount === null || calculatedAmount <= 0) {
+        setError(expressionError || 'Please enter a valid amount');
+        setLoading(false);
         return;
       }
 
@@ -105,7 +232,7 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          amount: parseFloat(amount),
+          amount: calculatedAmount,
           category: finalCategory,
           date: new Date(date).toISOString(),
           note: note || undefined,
@@ -123,7 +250,7 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
         return;
       }
 
-      setAmount('');
+      setAmountInput('');
       setCategory('Food');
       setCustomCategory('');
       setDate(new Date().toISOString().split('T')[0]);
@@ -168,21 +295,45 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">
-                Amount (₹)
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium leading-none">
+                  Amount (₹)
+                </label>
+                {isExpression && calculatedAmount !== null && (
+                  <span className="text-xs text-primary font-medium animate-in fade-in">
+                    = {formatINR(calculatedAmount)}
+                  </span>
+                )}
+              </div>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">₹</span>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  type="text"
+                  inputMode="decimal"
+                  value={amountInput}
+                  onChange={(e) => setAmountInput(e.target.value)}
                   required
-                  className="flex h-10 w-full rounded-md border border-input bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
-                  placeholder="0.00"
+                  className={`flex h-10 w-full rounded-md border bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${
+                    expressionError ? 'border-destructive' : 'border-input'
+                  }`}
+                  placeholder="0.00 or 130+140"
                 />
               </div>
+              {/* Expression helper text */}
+              {amountInput && !expressionError && isExpression && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1 animate-in fade-in">
+                  <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Math expression detected
+                </p>
+              )}
+              {expressionError && (
+                <p className="text-xs text-destructive animate-in fade-in">{expressionError}</p>
+              )}
+              {!amountInput && (
+                <p className="text-xs text-muted-foreground">Tip: Enter math like 100+50*2</p>
+              )}
             </div>
 
             <div className="space-y-2">
