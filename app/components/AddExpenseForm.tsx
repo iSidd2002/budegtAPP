@@ -149,6 +149,14 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   const isExpression = expressionResult.isExpression;
   const expressionError = expressionResult.error;
 
+  // Convert expression to calculated value when user leaves the field
+  const handleAmountBlur = useCallback(() => {
+    if (isExpression && calculatedAmount !== null && !expressionError) {
+      // Replace the expression with the calculated result
+      setAmountInput(calculatedAmount.toString());
+    }
+  }, [isExpression, calculatedAmount, expressionError]);
+
   // AI category suggestion
   const getAISuggestion = useCallback(async (description: string) => {
     if (!description || description.trim().length < 3) {
@@ -312,6 +320,7 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
                   inputMode="decimal"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
+                  onBlur={handleAmountBlur}
                   required
                   className={`flex h-10 w-full rounded-md border bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${
                     expressionError ? 'border-destructive' : 'border-input'
@@ -319,13 +328,13 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
                   placeholder="0.00 or 130+140"
                 />
               </div>
-              {/* Expression helper text */}
+              {/* Expression helper text - shows while typing expression */}
               {amountInput && !expressionError && isExpression && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1 animate-in fade-in">
                   <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  Math expression detected
+                  Calculating: {calculatedAmount !== null ? calculatedAmount : '...'}
                 </p>
               )}
               {expressionError && (
