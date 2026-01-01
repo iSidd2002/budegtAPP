@@ -169,6 +169,16 @@ export async function logAuditEvent(
   userAgent?: string
 ): Promise<void> {
   try {
+    // Skip logging if userId is not a valid MongoDB ObjectId (24 hex chars)
+    // This prevents errors when logging failed auth attempts with 'unknown' userId
+    const objectIdRegex = /^[a-fA-F0-9]{24}$/;
+    if (!objectIdRegex.test(userId)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Skipping audit log for action ${action}: invalid userId "${userId}"`);
+      }
+      return;
+    }
+
     // Sanitize details to prevent logging sensitive data
     const sanitizedDetails = details ? sanitizeAuditDetails(details) : undefined;
 
