@@ -7,32 +7,45 @@ interface AppleFitnessRingsProps {
   // Budget Ring Data
   totalSpent: number;
   budgetAmount: number;
-  
+
   // Time Ring Data
   month: number;
   year: number;
-  
+
   // Category Ring Data (optional - shows top category spending)
   topCategorySpent?: number;
   topCategoryName?: string;
   topCategoryBudget?: number;
 }
 
-export default function AppleFitnessRings({ 
-  totalSpent, 
-  budgetAmount, 
-  month, 
+export default function AppleFitnessRings({
+  totalSpent,
+  budgetAmount,
+  month,
   year,
   topCategorySpent = 0,
   topCategoryName = 'Food',
   topCategoryBudget
 }: AppleFitnessRingsProps) {
   const [mounted, setMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check for mobile on client side
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
     // Trigger animation after mount
     const timer = setTimeout(() => setMounted(true), 150);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkMobile);
+    };
   }, [totalSpent, budgetAmount, month, year]);
 
   // ====================
@@ -48,7 +61,7 @@ export default function AppleFitnessRings({
   const daysInMonth = new Date(year, month, 0).getDate();
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
-  
+
   let timePercentage = 0;
   if (year < currentYear || (year === currentYear && month < currentMonth)) {
     timePercentage = 100;
@@ -59,21 +72,21 @@ export default function AppleFitnessRings({
   // ====================
   // RING 3: CATEGORY (Inner - Blue like Stand ring)
   // ====================
-  const categoryPercentage = topCategoryBudget 
+  const categoryPercentage = topCategoryBudget
     ? Math.min(Math.max((topCategorySpent / topCategoryBudget) * 100, 0), 100)
     : (topCategorySpent / (budgetAmount * 0.3)) * 100; // Assume 30% of budget if no specific budget
 
   // ====================
-  // SVG Configuration - Responsive
+  // SVG Configuration - Fixed viewBox, responsive container
   // ====================
-  // Use smaller size on mobile, larger on desktop
-  const size = typeof window !== 'undefined' && window.innerWidth < 640 ? 240 : 280;
+  // Use a fixed viewBox size for consistent rendering
+  const size = 280;
   const center = size / 2;
-  const strokeWidth = size < 260 ? 16 : 18; // Thinner strokes on mobile
-  const ringGap = size < 260 ? 5 : 6;
+  const strokeWidth = 18;
+  const ringGap = 6;
 
-  // Ring radii (from outer to inner) - Scale with size
-  const radius1 = size < 260 ? 92 : 110; // Budget (outer)
+  // Ring radii (from outer to inner) - Fixed values for consistent viewBox
+  const radius1 = 110; // Budget (outer)
   const radius2 = radius1 - strokeWidth - ringGap; // Time (middle)
   const radius3 = radius2 - strokeWidth - ringGap; // Category (inner)
 
@@ -88,12 +101,18 @@ export default function AppleFitnessRings({
   const offset3 = circumference3 - (categoryPercentage / 100) * circumference3;
 
   return (
-    <div className="flex flex-col items-center justify-center py-4 sm:py-6 relative w-full">
-      {/* Main Rings Container - Responsive */}
-      <div className="relative w-full max-w-[240px] sm:max-w-[280px] aspect-square mx-auto">
-        <svg 
-          width="100%" 
-          height="100%" 
+    <div className="flex flex-col items-center justify-center py-4 sm:py-6 relative w-full overflow-visible">
+      {/* Main Rings Container - Fixed aspect ratio with responsive max-width */}
+      <div
+        className="relative mx-auto"
+        style={{
+          width: isMobile ? '200px' : '240px',
+          height: isMobile ? '200px' : '240px',
+        }}
+      >
+        <svg
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${size} ${size}`}
           className="rotate-[-90deg]"
           style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.08))' }}
@@ -238,20 +257,29 @@ export default function AppleFitnessRings({
         </svg>
 
         {/* Center Content - Remaining Budget - Responsive */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500 px-2">
-            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-0.5 sm:mb-1">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10">
+          <div className="flex flex-col items-center animate-in fade-in zoom-in duration-700 delay-500 px-1">
+            <span
+              className="font-bold uppercase tracking-widest text-muted-foreground"
+              style={{ fontSize: isMobile ? '8px' : '10px', marginBottom: isMobile ? '2px' : '4px' }}
+            >
               Remaining
             </span>
-            <span className={`text-2xl sm:text-3xl font-bold tabular-nums tracking-tight ${
-              (budgetAmount - totalSpent) < 0 
-                ? 'text-[#FA114F] dark:text-[#FF4581]' 
-                : 'text-foreground'
-            }`}>
+            <span
+              className={`font-bold tabular-nums tracking-tight ${
+                (budgetAmount - totalSpent) < 0
+                  ? 'text-[#FA114F] dark:text-[#FF4581]'
+                  : 'text-foreground'
+              }`}
+              style={{ fontSize: isMobile ? '18px' : '24px' }}
+            >
               {formatINR(Math.abs(budgetAmount - totalSpent))}
             </span>
             {isOverBudget && (
-              <span className="text-[8px] sm:text-[9px] font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] mt-0.5 sm:mt-1 animate-pulse">
+              <span
+                className="font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] animate-pulse"
+                style={{ fontSize: isMobile ? '7px' : '9px', marginTop: isMobile ? '2px' : '4px' }}
+              >
                 Over Budget
               </span>
             )}
