@@ -149,13 +149,25 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   const isExpression = expressionResult.isExpression;
   const expressionError = expressionResult.error;
 
-  // Convert expression to calculated value when user leaves the field
-  const handleAmountBlur = useCallback(() => {
+  // Convert expression to calculated value when user leaves the field or presses "="
+  const convertExpressionToResult = useCallback(() => {
     if (isExpression && calculatedAmount !== null && !expressionError) {
       // Replace the expression with the calculated result
       setAmountInput(calculatedAmount.toString());
     }
   }, [isExpression, calculatedAmount, expressionError]);
+
+  const handleAmountBlur = useCallback(() => {
+    convertExpressionToResult();
+  }, [convertExpressionToResult]);
+
+  // Handle "=" key press to convert expression (calculator-like behavior)
+  const handleAmountKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '=' || e.key === 'Enter') {
+      e.preventDefault(); // Prevent "=" from being typed or form submission
+      convertExpressionToResult();
+    }
+  }, [convertExpressionToResult]);
 
   // AI category suggestion
   const getAISuggestion = useCallback(async (description: string) => {
@@ -335,12 +347,13 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
                   enterKeyHint="done"
                   value={amountInput}
                   onChange={(e) => setAmountInput(e.target.value)}
+                  onKeyDown={handleAmountKeyDown}
                   onBlur={handleAmountBlur}
                   required
                   className={`flex h-10 w-full rounded-md border bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${
                     expressionError ? 'border-destructive' : 'border-input'
                   }`}
-                  placeholder="0.00 or 130+140"
+                  placeholder="0.00 or 130+140 (press = to calculate)"
                 />
               </div>
               {/* Expression helper text - shows while typing expression */}
@@ -356,7 +369,7 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
                 <p className="text-xs text-destructive animate-in fade-in">{expressionError}</p>
               )}
               {!amountInput && (
-                <p className="text-xs text-muted-foreground">Tip: Enter math like 100+50*2</p>
+                <p className="text-xs text-muted-foreground">Tip: Enter math like 100+50*2, press = to calculate</p>
               )}
             </div>
 
