@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyAccessToken } from '@/lib/auth';
+import { verifyAccessToken, generateSessionExpiry } from '@/lib/auth';
 import { getSecureHeaders, withRateLimit, getClientIp } from '@/lib/middleware';
 
 // Configuration
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_KEEPALIVES = 10; // 10 per minute max
+const RATE_LIMIT_MAX_KEEPALIVES = 20; // 20 per minute max (increased for PWA)
+const SESSION_EXTEND_THRESHOLD_DAYS = 30; // Extend session if less than 30 days remaining
 
 /**
  * Session Keepalive Endpoint
@@ -19,6 +20,7 @@ const RATE_LIMIT_MAX_KEEPALIVES = 10; // 10 per minute max
  * Solution:
  * - Client calls this endpoint periodically (every app open)
  * - Updates session's updatedAt timestamp
+ * - Extends session expiry if less than 30 days remaining (rolling session)
  * - Signals to iOS that the PWA is "active"
  * - Helps prevent aggressive storage eviction
  */
@@ -61,7 +63,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update session's updatedAt timestamp
+    // Calculate threshold for session extension
+    const extendThresholdDate = new Date();
+    extendThresholdDate.setDate(extendThresholdDate.getDate() + SESSION_EXTEND_THRESHOLD_DAYS);
+
+    // Find sessions that need extension (expiring within threshold)
+    const sessionsNeedingExtension = await prisma.session.findMany({
+      where: {
+        userId: payload.userId,
+        revokedAt: null,
+        expiresAt: {
+          gte: new Date(),
+          lte: extendThresholdDate, // Expiring within threshold
+        },
+      },
+      select: { id: true },
+    });
+
+    // Extend sessions that are expiring soon
+    let sessionsExtended = 0;
+    if (sessionsNeedingExtension.length > 0) {
+      const newExpiry = generateSessionExpiry();
+      const result = await prisma.session.updateMany({
+        where: {
+          id: { in: sessionsNeedingExtension.map(s => s.id) },
+        },
+        data: {
+          expiresAt: newExpiry,
+          updatedAt: new Date(),
+        },
+      });
+      sessionsExtended = result.count;
+    }
+
+    // Update remaining sessions' updatedAt timestamp (for activity tracking)
     const updatedSessions = await prisma.session.updateMany({
       where: {
         userId: payload.userId,
@@ -78,6 +113,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Session keepalive successful',
         sessionsUpdated: updatedSessions.count,
+        sessionsExtended: sessionsExtended,
       },
       { status: 200 }
     );

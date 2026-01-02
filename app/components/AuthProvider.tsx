@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, createContext, useContext, useCallback } from 'react';
+import { useEffect, useState, createContext, useContext, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { storage } from '@/lib/storage';
 
@@ -8,10 +8,16 @@ import { storage } from '@/lib/storage';
 const DEBUG = process.env.NODE_ENV === 'development';
 const log = DEBUG ? console.log.bind(console, '[Auth]') : () => {};
 
+// Token refresh configuration
+const ACCESS_TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
+const MIN_REFRESH_INTERVAL = 30 * 1000; // Minimum 30 seconds between refreshes to prevent spam
+const BACKGROUND_REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh if backgrounded > 5 minutes
+
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
+  refreshToken: () => Promise<boolean>; // Expose for manual refresh if needed
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -30,9 +36,28 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to refresh access token
-  const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+  // Track last refresh time and background time to prevent refresh spam
+  const lastRefreshTime = useRef<number>(0);
+  const backgroundStartTime = useRef<number>(0);
+  const isRefreshing = useRef<boolean>(false);
+
+  // Function to refresh access token with debouncing
+  const refreshAccessToken = useCallback(async (force = false): Promise<boolean> => {
+    // Prevent concurrent refreshes
+    if (isRefreshing.current) {
+      log('Refresh already in progress, skipping');
+      return true; // Assume success if already refreshing
+    }
+
+    // Debounce: prevent refresh spam (unless forced)
+    const now = Date.now();
+    if (!force && now - lastRefreshTime.current < MIN_REFRESH_INTERVAL) {
+      log('Too soon since last refresh, skipping');
+      return true;
+    }
+
     try {
+      isRefreshing.current = true;
       const refreshToken = await storage.getItem('refreshToken');
 
       if (!refreshToken) {
@@ -40,6 +65,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         return false;
       }
 
+      log('Refreshing access token...');
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         credentials: 'include',
@@ -54,23 +80,32 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
         if (data.accessToken) {
           await storage.setItem('accessToken', data.accessToken);
+          lastRefreshTime.current = Date.now();
+          log('Access token refreshed successfully');
 
-          // Store new refresh token for PWA compatibility
+          // Store new refresh token for PWA compatibility (token rotation)
           if (data.refreshToken) {
             await storage.setItem('refreshToken', data.refreshToken);
+            log('Refresh token rotated');
           }
           return true;
         }
         return false;
       } else {
-        // Clear tokens on failure
-        await storage.removeItem('accessToken');
-        await storage.removeItem('refreshToken');
+        log('Token refresh failed with status:', response.status);
+        // Only clear tokens on 401 (unauthorized), not on network errors
+        if (response.status === 401) {
+          await storage.removeItem('accessToken');
+          await storage.removeItem('refreshToken');
+        }
         return false;
       }
     } catch (error) {
       if (DEBUG) console.error('[Auth] Token refresh error:', error);
+      // Don't clear tokens on network errors - user might be offline temporarily
       return false;
+    } finally {
+      isRefreshing.current = false;
     }
   }, []);
 
@@ -131,7 +166,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           }
           return;
         } else {
-          const refreshed = await refreshAccessToken();
+          log('No access token, attempting refresh...');
+          const refreshed = await refreshAccessToken(true); // Force refresh
           if (!refreshed) {
             setIsAuthenticated(false);
             setIsLoading(false);
@@ -139,7 +175,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           } else {
             setIsAuthenticated(true);
             setIsLoading(false);
-            await sendKeepalive();
+            lastRefreshTime.current = Date.now();
           }
           return;
         }
@@ -149,7 +185,8 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       const isValid = await verifyToken(accessToken);
 
       if (!isValid) {
-        const refreshed = await refreshAccessToken();
+        log('Access token invalid, attempting refresh...');
+        const refreshed = await refreshAccessToken(true); // Force refresh
 
         if (!refreshed) {
           setIsAuthenticated(false);
@@ -158,12 +195,12 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         } else {
           setIsAuthenticated(true);
           setIsLoading(false);
-          await sendKeepalive();
         }
       } else {
         setIsAuthenticated(true);
         setIsLoading(false);
-        await sendKeepalive();
+        // Send keepalive to maintain session
+        sendKeepalive();
       }
     };
 
@@ -172,25 +209,102 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     // Set up automatic token refresh every 10 minutes
     const refreshInterval = setInterval(async () => {
-      const token = await storage.getItem('accessToken');
-      if (token && pathname !== '/') {
-        await refreshAccessToken();
+      if (pathname !== '/') {
+        log('Periodic token refresh...');
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) {
+          // Token refresh failed - check if we have a valid session
+          const token = await storage.getItem('accessToken');
+          if (token) {
+            const isValid = await verifyToken(token);
+            if (!isValid) {
+              log('Session expired, logging out');
+              setIsAuthenticated(false);
+              router.push('/');
+            }
+          }
+        }
       }
-    }, 10 * 60 * 1000); // 10 minutes
+    }, ACCESS_TOKEN_REFRESH_INTERVAL);
 
-    // iOS PWA: Send keepalive when app comes back to foreground
+    // iOS PWA: Handle visibility changes properly
+    // This is CRITICAL for PWA auth persistence
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && pathname !== '/') {
-        await sendKeepalive();
+      if (document.visibilityState === 'hidden') {
+        // App going to background - record the time
+        backgroundStartTime.current = Date.now();
+        log('App going to background');
+      } else if (document.visibilityState === 'visible' && pathname !== '/') {
+        // App coming to foreground
+        const backgroundDuration = Date.now() - backgroundStartTime.current;
+        log(`App returning from background after ${Math.round(backgroundDuration / 1000)}s`);
+
+        // Always send keepalive first
+        sendKeepalive();
+
+        // If backgrounded for more than threshold, proactively refresh token
+        if (backgroundDuration > BACKGROUND_REFRESH_THRESHOLD) {
+          log('Long background period detected, refreshing token...');
+          const refreshed = await refreshAccessToken(true); // Force refresh
+          if (!refreshed) {
+            // Refresh failed - verify current token
+            const token = await storage.getItem('accessToken');
+            if (token) {
+              const isValid = await verifyToken(token);
+              if (!isValid) {
+                log('Token expired after background, logging out');
+                setIsAuthenticated(false);
+                router.push('/');
+              }
+            } else {
+              // No token at all, logout
+              setIsAuthenticated(false);
+              router.push('/');
+            }
+          }
+        } else {
+          // Short background - just verify token is still valid
+          const token = await storage.getItem('accessToken');
+          if (token) {
+            const isValid = await verifyToken(token);
+            if (!isValid) {
+              // Token expired during short background, try refresh
+              const refreshed = await refreshAccessToken(true);
+              if (!refreshed) {
+                setIsAuthenticated(false);
+                router.push('/');
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // iOS PWA: Handle page focus (additional trigger for foreground)
+    const handleFocus = async () => {
+      if (pathname !== '/') {
+        sendKeepalive();
+      }
+    };
+
+    // iOS PWA: Handle online/offline status
+    const handleOnline = async () => {
+      log('Network came online, refreshing token...');
+      if (pathname !== '/') {
+        await refreshAccessToken();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
 
-    // Clean up interval and event listener on unmount
+    // Clean up interval and event listeners on unmount
     return () => {
       clearInterval(refreshInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
     };
   }, [pathname, router, refreshAccessToken, verifyToken, sendKeepalive]);
 
@@ -242,7 +356,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, logout, refreshToken: refreshAccessToken }}>
       {children}
     </AuthContext.Provider>
   );
