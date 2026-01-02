@@ -115,7 +115,7 @@ export default function Dashboard() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            💰 Expenses
+            💰 Expenses & Budget
             {mainTab === 'expenses' && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
             )}
