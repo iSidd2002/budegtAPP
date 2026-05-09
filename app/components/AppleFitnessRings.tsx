@@ -119,25 +119,22 @@ export default function AppleFitnessRings({
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
-            {/* Budget Ring Gradient (Red/Pink - Apple Move) */}
+            {/* Budget Ring — Apple Watch Move (red/pink) */}
             <linearGradient id="budgetGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#FA114F" />
-              <stop offset="50%" stopColor="#FF0844" />
-              <stop offset="100%" stopColor="#FF4581" />
-            </linearGradient>
-            
-            {/* Time Ring Gradient (Green - Apple Exercise) */}
-            <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#92FE9D" />
-              <stop offset="50%" stopColor="#00C9FF" />
-              <stop offset="100%" stopColor="#7DE7EB" />
+              <stop offset="0%" stopColor="#FF453A" />
+              <stop offset="100%" stopColor="#FF2D55" />
             </linearGradient>
 
-            {/* Category Ring Gradient (Blue/Cyan - Apple Stand) */}
+            {/* Time Ring — Apple Watch Exercise (green) */}
+            <linearGradient id="timeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#30D158" />
+              <stop offset="100%" stopColor="#00C136" />
+            </linearGradient>
+
+            {/* Category Ring — Apple Watch Stand (blue) */}
             <linearGradient id="categoryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#4FACFE" />
-              <stop offset="50%" stopColor="#00F2FE" />
-              <stop offset="100%" stopColor="#43E6FC" />
+              <stop offset="0%" stopColor="#32ADE6" />
+              <stop offset="100%" stopColor="#007AFF" />
             </linearGradient>
 
             {/* Glow Filter for depth */}
@@ -169,11 +166,10 @@ export default function AppleFitnessRings({
             cx={center}
             cy={center}
             r={radius1}
-            stroke="currentColor"
+            stroke="rgba(0,0,0,0.08)"
             strokeWidth={strokeWidth}
             fill="transparent"
-            className="text-gray-200/40 dark:text-gray-800/30"
-            style={{ filter: 'url(#innerShadow)' }}
+            className="dark:[stroke:rgba(255,255,255,0.08)]"
           />
           {/* Progress Arc */}
           <circle
@@ -199,11 +195,10 @@ export default function AppleFitnessRings({
             cx={center}
             cy={center}
             r={radius2}
-            stroke="currentColor"
+            stroke="rgba(0,0,0,0.08)"
             strokeWidth={strokeWidth}
             fill="transparent"
-            className="text-gray-200/40 dark:text-gray-800/30"
-            style={{ filter: 'url(#innerShadow)' }}
+            className="dark:[stroke:rgba(255,255,255,0.08)]"
           />
           {/* Progress Arc */}
           <circle
@@ -230,11 +225,10 @@ export default function AppleFitnessRings({
             cx={center}
             cy={center}
             r={radius3}
-            stroke="currentColor"
+            stroke="rgba(0,0,0,0.08)"
             strokeWidth={strokeWidth}
             fill="transparent"
-            className="text-gray-200/40 dark:text-gray-800/30"
-            style={{ filter: 'url(#innerShadow)' }}
+            className="dark:[stroke:rgba(255,255,255,0.08)]"
           />
           {/* Progress Arc */}
           <circle
@@ -298,7 +292,7 @@ export default function AppleFitnessRings({
                 <span
                   className={`font-bold tabular-nums tracking-tight whitespace-nowrap ${
                     (budgetAmount - totalSpent) < 0
-                      ? 'text-[#FA114F] dark:text-[#FF4581]'
+                      ? 'text-[#FF2D55]'
                       : 'text-foreground'
                   }`}
                   style={{ fontSize: `${fontSize}px`, lineHeight: 1.1 }}
@@ -307,7 +301,7 @@ export default function AppleFitnessRings({
                 </span>
                 {isOverBudget && (
                   <span
-                    className="font-bold uppercase tracking-wider text-[#FA114F] dark:text-[#FF4581] animate-pulse whitespace-nowrap"
+                    className="font-bold uppercase tracking-wider text-[#FF2D55] animate-pulse whitespace-nowrap"
                     style={{ fontSize: isMobile ? '8px' : '10px', marginTop: isMobile ? '2px' : '4px' }}
                   >
                     Over Budget
@@ -319,78 +313,29 @@ export default function AppleFitnessRings({
         })()}
       </div>
 
-      {/* Detailed Stats Legend - Apple Style - Mobile Optimized */}
-      <div className="flex flex-col gap-3 sm:gap-4 mt-6 sm:mt-8 w-full px-1 sm:px-2">
-        {/* Budget Ring Stats */}
-        <div className="flex items-center justify-between group cursor-default hover:bg-accent/50 rounded-lg p-2.5 sm:p-3 transition-colors touch-manipulation">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="relative flex items-center justify-center shrink-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#FA114F] to-[#FF4581] shadow-lg shadow-red-500/30"></div>
-              <span className="absolute text-white text-[10px] sm:text-xs font-bold">₹</span>
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs sm:text-sm font-semibold text-foreground">Budget</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                {formatINR(totalSpent)} of {formatINR(budgetAmount)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-lg sm:text-xl font-bold tabular-nums text-foreground">
-              {Math.round(budgetPercentage)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Time Ring Stats */}
-        <div className="flex items-center justify-between group cursor-default hover:bg-accent/50 rounded-lg p-2.5 sm:p-3 transition-colors touch-manipulation">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="relative flex items-center justify-center shrink-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#92FE9D] via-[#00C9FF] to-[#7DE7EB] shadow-lg shadow-cyan-500/30"></div>
-              <span className="absolute text-[10px] sm:text-xs font-bold">📅</span>
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs sm:text-sm font-semibold text-foreground">Month Progress</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                Day {year === currentYear && month === currentMonth ? now.getDate() : daysInMonth} of {daysInMonth}
-              </span>
+      {/* Compact 3-column legend */}
+      <div className="flex justify-center gap-5 mt-5 w-full">
+        {[
+          { color: '#FF2D55', label: 'Budget',  value: `${Math.round(budgetPercentage)}%`,  sub: `${formatINR(totalSpent)} spent` },
+          { color: '#30D158', label: 'Month',   value: `${Math.round(timePercentage)}%`,    sub: `Day ${year === currentYear && month === currentMonth ? now.getDate() : daysInMonth}/${daysInMonth}` },
+          { color: '#007AFF', label: topCategoryName, value: `${Math.round(categoryPercentage)}%`, sub: formatINR(topCategorySpent) },
+        ].map(({ color, label, value, sub }) => (
+          <div key={label} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+            <div>
+              <p className="text-[11px] text-muted-foreground truncate max-w-[70px]">{label}</p>
+              <p className="text-xs font-bold text-foreground tabular-nums">{value}</p>
+              <p className="text-[10px] text-muted-foreground truncate max-w-[70px]">{sub}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-lg sm:text-xl font-bold tabular-nums text-foreground">
-              {Math.round(timePercentage)}%
-            </span>
-          </div>
-        </div>
-
-        {/* Category Ring Stats */}
-        <div className="flex items-center justify-between group cursor-default hover:bg-accent/50 rounded-lg p-2.5 sm:p-3 transition-colors touch-manipulation">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <div className="relative flex items-center justify-center shrink-0">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#4FACFE] to-[#43E6FC] shadow-lg shadow-blue-500/30"></div>
-              <span className="absolute text-[10px] sm:text-xs font-bold">🏷️</span>
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs sm:text-sm font-semibold text-foreground">Top Category</span>
-              <span className="text-[10px] sm:text-xs text-muted-foreground truncate">
-                {topCategoryName}: {formatINR(topCategorySpent)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-lg sm:text-xl font-bold tabular-nums text-foreground">
-              {Math.round(categoryPercentage)}%
-            </span>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Achievement Badge (if all rings complete) - Mobile Optimized */}
       {budgetPercentage >= 100 && timePercentage >= 100 && categoryPercentage >= 100 && (
-        <div className="mt-4 sm:mt-6 px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 text-white rounded-full shadow-xl animate-in bounce-in">
-          <div className="flex items-center gap-2 justify-center">
-            <span className="text-xl sm:text-2xl">🏆</span>
-            <span className="font-bold text-xs sm:text-sm">All Rings Completed!</span>
+        <div className="mt-4 px-5 py-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 text-white rounded-full shadow-apple-md animate-spring-in">
+          <div className="flex items-center gap-2">
+            <span>🏆</span>
+            <span className="font-bold text-xs">All Rings Completed!</span>
           </div>
         </div>
       )}

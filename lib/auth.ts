@@ -4,7 +4,7 @@ import crypto from 'crypto';
 
 // Security Configuration
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '2h';
 const SESSION_EXPIRY_DAYS = 90; // Extended for iOS PWA compatibility
 const REFRESH_TOKEN_BYTES = 32; // 256-bit token
 

@@ -54,95 +54,81 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background font-sans antialiased">
-      {/* Header - Mobile Optimized */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-4 md:px-6 max-w-7xl mx-auto">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tracking-tight">Budget App</span>
-            <span className="hidden md:inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 text-foreground">
-              Enterprise
-            </span>
+      {/* Header — frosted glass macOS-style navbar */}
+      <header className="sticky top-0 z-50 w-full glass shadow-apple-sm border-b border-border/30">
+        <div className="container flex h-[52px] sm:h-[60px] items-center justify-between px-4 md:px-6 max-w-7xl mx-auto">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-apple-blue to-apple-indigo flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="text-[17px] font-semibold tracking-tight text-foreground">Budget</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex gap-2">
+            <div className="hidden sm:flex gap-1.5">
               <button
                 onClick={() => handleExport('csv')}
                 disabled={exporting}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                className="press-effect inline-flex items-center justify-center rounded-[10px] text-sm font-medium transition-colors border border-border/60 bg-card/60 hover:bg-card h-8 px-3 text-foreground disabled:opacity-40"
               >
                 Export CSV
               </button>
               <button
                 onClick={() => handleExport('json')}
                 disabled={exporting}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2"
+                className="press-effect inline-flex items-center justify-center rounded-[10px] text-sm font-medium transition-colors border border-border/60 bg-card/60 hover:bg-card h-8 px-3 text-foreground disabled:opacity-40"
               >
                 Export JSON
               </button>
             </div>
-            
+
             <button
               onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 h-9 px-4 py-2"
+              className="press-effect inline-flex items-center justify-center rounded-[10px] text-sm font-medium transition-colors text-apple-red hover:bg-apple-red/10 h-8 px-3"
             >
-              Logout
+              Sign Out
             </button>
-            
-            {/* Mobile Export Menu (Simplified for now, could be a dropdown in future) */}
-            <div className="sm:hidden flex gap-1">
-               <button
-                onClick={() => handleExport('csv')}
-                disabled={exporting}
-                className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input h-9 w-9 p-0"
-                title="Export CSV"
-              >
-                📄
-              </button>
-            </div>
+
+            {/* Mobile export */}
+            <button
+              onClick={() => handleExport('csv')}
+              disabled={exporting}
+              className="press-effect sm:hidden inline-flex items-center justify-center rounded-[10px] text-sm border border-border/60 bg-card/60 h-8 w-8"
+              title="Export CSV"
+            >
+              📄
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main Tab Navigation */}
-      <div className="container px-4 sm:px-4 md:px-6 max-w-7xl mx-auto pt-4">
-        <div className="flex gap-2 border-b">
-          <button
-            onClick={() => setMainTab('expenses')}
-            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              mainTab === 'expenses'
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            💰 Expenses & Budget
-            {mainTab === 'expenses' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
-          <button
-            onClick={() => setMainTab('loans')}
-            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              mainTab === 'loans'
-                ? 'text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            🤝 Loans
-            {mainTab === 'loans' && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
-            )}
-          </button>
+      {/* iOS Segmented Control tab navigation */}
+      <div className="container px-4 md:px-6 max-w-7xl mx-auto pt-4 pb-2">
+        <div className="inline-flex bg-neutral-100 dark:bg-neutral-900 rounded-[10px] p-[3px]">
+          {(['expenses', 'loans'] as MainTab[]).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMainTab(tab)}
+              className={`press-effect px-5 py-1.5 rounded-[8px] text-sm font-semibold transition-all duration-200 ease-apple-ease ${
+                mainTab === tab
+                  ? 'bg-card shadow-apple-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {tab === 'expenses' ? '💰 Expenses & Budget' : '🤝 Loans'}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Content - Mobile Optimized Margins (16px iPhone safe area, 16dp Android) */}
-      <main className="container py-4 sm:py-6 px-4 sm:px-4 md:px-6 lg:py-8 max-w-7xl mx-auto">
+      {/* Main Content */}
+      <main className="container py-4 sm:py-6 px-4 md:px-6 lg:py-6 max-w-7xl mx-auto animate-in">
         {mainTab === 'expenses' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 lg:gap-8">
-            {/* Add Expense Form - 4 columns on large screens */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
             <div className="lg:col-span-4 order-1">
-              <div className="lg:sticky lg:top-24">
+              <div className="lg:sticky lg:top-[72px]">
                 <AddExpenseForm
                   onSuccess={() => setRefreshKey((k) => k + 1)}
                   budgetType={budgetType}
@@ -150,7 +136,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Dashboard - 8 columns on large screens */}
             <div className="lg:col-span-8 order-2">
               <BudgetDashboard
                 key={`${refreshKey}-${budgetType}`}
@@ -165,7 +150,6 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* PWA Install Button */}
       <PWAInstallButton />
     </div>
   );

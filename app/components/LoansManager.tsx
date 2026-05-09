@@ -77,8 +77,8 @@ export default function LoansManager() {
         borrowerName: formData.borrowerName.trim(),
         amount: parseFloat(formData.amount),
         loanDate: new Date(formData.loanDate).toISOString(),
-        expectedReturnDate: formData.expectedReturnDate 
-          ? new Date(formData.expectedReturnDate).toISOString() 
+        expectedReturnDate: formData.expectedReturnDate
+          ? new Date(formData.expectedReturnDate).toISOString()
           : null,
         notes: formData.notes.trim() || null,
       };
@@ -128,8 +128,8 @@ export default function LoansManager() {
       borrowerName: loan.borrowerName,
       amount: loan.amount.toString(),
       loanDate: new Date(loan.loanDate).toISOString().split('T')[0],
-      expectedReturnDate: loan.expectedReturnDate 
-        ? new Date(loan.expectedReturnDate).toISOString().split('T')[0] 
+      expectedReturnDate: loan.expectedReturnDate
+        ? new Date(loan.expectedReturnDate).toISOString().split('T')[0]
         : '',
       notes: loan.notes || '',
     });
@@ -178,9 +178,7 @@ export default function LoansManager() {
   };
 
   const getDaysSince = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diffTime = now.getTime() - date.getTime();
+    const diffTime = new Date().getTime() - new Date(dateStr).getTime();
     return Math.floor(diffTime / (1000 * 60 * 60 * 24));
   };
 
@@ -191,130 +189,112 @@ export default function LoansManager() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-4 animate-pulse">
+        <div className="grid grid-cols-3 gap-3">
+          {[0, 1, 2].map((i) => <div key={i} className="h-24 bg-secondary rounded-xl" />)}
+        </div>
+        <div className="h-16 bg-secondary rounded-xl" />
+        <div className="space-y-3">
+          {[0, 1].map((i) => <div key={i} className="h-20 bg-secondary rounded-xl" />)}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
-          <div className="text-sm opacity-90">Total Lent Out</div>
-          <div className="text-2xl font-bold">{formatINR(summary.totalLent)}</div>
-        </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-lg">
-          <div className="text-sm opacity-90">Active Loans</div>
-          <div className="text-2xl font-bold">{summary.activeCount}</div>
-        </div>
-        <div className={`bg-gradient-to-br ${summary.overdueCount > 0 ? 'from-red-500 to-red-600' : 'from-gray-400 to-gray-500'} rounded-2xl p-4 text-white shadow-lg`}>
-          <div className="text-sm opacity-90">Overdue</div>
-          <div className="text-2xl font-bold">{summary.overdueCount}</div>
-        </div>
+    <div className="space-y-5">
+      {/* Summary Stat Cards — tinted icon chip style */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { label: 'Total Lent',    value: formatINR(summary.totalLent),   icon: '💸', color: 'apple-blue',   number: null },
+          { label: 'Active Loans',  value: `${summary.activeCount}`,        icon: '📋', color: 'apple-green',  number: null },
+          { label: 'Overdue',       value: `${summary.overdueCount}`,       icon: '⏰', color: summary.overdueCount > 0 ? 'apple-red' : 'apple-teal', number: null },
+        ].map(({ label, value, icon, color }) => (
+          <div key={label} className="bg-card rounded-xl shadow-apple-sm p-4">
+            <div className={`w-9 h-9 rounded-[10px] bg-${color}/15 flex items-center justify-center mb-3 text-base`}>
+              {icon}
+            </div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+            <p className={`text-2xl font-bold tabular-nums mt-0.5 text-${color}`}>{value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium shadow-sm hover:bg-primary/90 transition-colors"
+          onClick={() => { setShowForm(!showForm); if (showForm) resetForm(); }}
+          className="press-effect inline-flex items-center gap-2 px-4 py-2 bg-apple-blue text-white rounded-xl text-sm font-semibold shadow-apple-sm hover:bg-apple-blue/90 transition-colors"
         >
           {showForm ? '✕ Cancel' : '+ Add Loan'}
         </button>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={showReturned}
-            onChange={(e) => setShowReturned(e.target.checked)}
-            className="rounded border-gray-300"
-          />
-          Show returned loans
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <div
+            onClick={() => setShowReturned(!showReturned)}
+            className={`relative w-[44px] h-[26px] rounded-full cursor-pointer transition-colors duration-300 ease-spring ${showReturned ? 'bg-apple-green' : 'bg-neutral-300 dark:bg-neutral-600'}`}
+          >
+            <span className={`absolute top-[2px] w-[22px] h-[22px] bg-white rounded-full shadow-apple-sm transition-transform duration-300 ease-spring ${showReturned ? 'translate-x-[19px]' : 'translate-x-[2px]'}`} />
+          </div>
+          <span className="text-muted-foreground text-sm select-none">Show returned</span>
         </label>
       </div>
 
       {/* Add/Edit Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-card rounded-2xl border p-4 sm:p-6 space-y-4 shadow-sm">
-          <h3 className="font-semibold text-lg">{editingLoan ? 'Edit Loan' : 'Record New Loan'}</h3>
+        <form onSubmit={handleSubmit} className="bg-card rounded-2xl shadow-apple-md overflow-hidden animate-spring-in">
+          <div className="px-5 pt-5 pb-3 border-b border-border/40">
+            <h3 className="text-[17px] font-semibold">{editingLoan ? 'Edit Loan' : 'Record New Loan'}</h3>
+          </div>
 
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">
+            <div className="mx-4 mt-3 p-3 rounded-xl bg-apple-red/8 border border-apple-red/20 text-apple-red text-sm">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Borrower Name *</label>
-              <input
-                type="text"
-                value={formData.borrowerName}
-                onChange={(e) => setFormData({ ...formData, borrowerName: e.target.value })}
-                required
-                className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                placeholder="Who borrowed the money?"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Amount (₹) *</label>
-              <input
-                type="number"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-                min="1"
-                step="0.01"
-                className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                placeholder="Amount lent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Loan Date *</label>
-              <input
-                type="date"
-                value={formData.loanDate}
-                onChange={(e) => setFormData({ ...formData, loanDate: e.target.value })}
-                required
-                className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Expected Return Date</label>
-              <input
-                type="date"
-                value={formData.expectedReturnDate}
-                onChange={(e) => setFormData({ ...formData, expectedReturnDate: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          <div className="mx-4 mt-3 bg-secondary/40 rounded-xl overflow-hidden">
+            {[
+              { label: 'Borrower Name', type: 'text',   key: 'borrowerName',       placeholder: 'Who borrowed the money?', required: true  },
+              { label: 'Amount (₹)',    type: 'number',  key: 'amount',             placeholder: 'Amount lent',             required: true  },
+              { label: 'Loan Date',     type: 'date',    key: 'loanDate',           placeholder: '',                        required: true  },
+              { label: 'Expected By',   type: 'date',    key: 'expectedReturnDate', placeholder: '',                        required: false },
+            ].map(({ label, type, key, placeholder, required }) => (
+              <div key={key} className="grouped-row flex items-center justify-between gap-3">
+                <span className="text-sm font-medium text-foreground shrink-0">{label}</span>
+                <input
+                  type={type}
+                  value={formData[key as keyof typeof formData]}
+                  onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
+                  required={required}
+                  placeholder={placeholder}
+                  step={type === 'number' ? '0.01' : undefined}
+                  min={type === 'number' ? '1' : undefined}
+                  className="flex-1 text-right bg-transparent border-0 text-sm text-apple-blue focus:ring-0 focus:outline-none placeholder:text-muted-foreground/40"
+                />
+              </div>
+            ))}
+            <div className="grouped-row">
+              <p className="text-sm font-medium text-foreground mb-1.5">Notes</p>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={2}
+                className="w-full bg-transparent border-0 text-sm resize-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground/50"
+                placeholder="Any additional notes…"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              rows={2}
-              className="w-full px-3 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
-              placeholder="Any additional notes..."
-            />
-          </div>
-
-          <div className="flex gap-3">
+          <div className="px-4 py-4 flex gap-3">
             <button
               type="submit"
               disabled={submitting}
-              className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+              className="press-effect flex-1 h-[50px] bg-apple-blue text-white rounded-xl font-semibold shadow-apple-md hover:bg-apple-blue/90 disabled:opacity-40"
             >
-              {submitting ? 'Saving...' : editingLoan ? 'Update Loan' : 'Add Loan'}
+              {submitting ? 'Saving…' : editingLoan ? 'Update Loan' : 'Add Loan'}
             </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="px-4 py-2 border rounded-lg hover:bg-accent"
-            >
+            <button type="button" onClick={resetForm}
+              className="press-effect px-4 h-[50px] rounded-xl bg-secondary text-muted-foreground font-medium">
               Cancel
             </button>
           </div>
@@ -323,71 +303,75 @@ export default function LoansManager() {
 
       {/* Loans List */}
       {loans.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <div className="text-4xl mb-3">💰</div>
-          <p>No {showReturned ? '' : 'active '}loans recorded yet.</p>
-          <p className="text-sm mt-1">Click &quot;Add Loan&quot; to track money you&apos;ve lent.</p>
+        <div className="text-center py-16 text-muted-foreground">
+          <div className="text-5xl mb-4">💰</div>
+          <p className="text-sm font-medium">No {showReturned ? '' : 'active '}loans yet</p>
+          <p className="text-xs mt-1 text-muted-foreground/70">Tap &quot;Add Loan&quot; to track money you&apos;ve lent.</p>
         </div>
       ) : (
         <div className="space-y-3">
           {loans.map((loan) => (
             <div
               key={loan.id}
-              className={`bg-card rounded-xl border p-4 shadow-sm transition-all hover:shadow-md ${
-                isOverdue(loan) ? 'border-red-300 dark:border-red-700 bg-red-50/50 dark:bg-red-900/10' : ''
-              } ${loan.isReturned ? 'opacity-60' : ''}`}
+              className={`bg-card rounded-xl shadow-apple-sm p-4 press-effect transition-all ${
+                isOverdue(loan) ? 'ring-2 ring-apple-red/30' : ''
+              } ${loan.isReturned ? 'opacity-55' : ''}`}
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-lg truncate">{loan.borrowerName}</span>
-                    {loan.isReturned && (
-                      <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full">
-                        ✓ Returned
-                      </span>
-                    )}
-                    {isOverdue(loan) && (
-                      <span className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs rounded-full">
-                        ⚠ Overdue
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-2xl font-bold text-primary mt-1">{formatINR(loan.amount)}</div>
-                  <div className="text-sm text-muted-foreground mt-2 space-y-1">
-                    <div>📅 Lent on {new Date(loan.loanDate).toLocaleDateString('en-IN')} ({getDaysSince(loan.loanDate)} days ago)</div>
-                    {loan.expectedReturnDate && (
-                      <div>⏰ Expected by {new Date(loan.expectedReturnDate).toLocaleDateString('en-IN')}</div>
-                    )}
-                    {loan.returnedDate && (
-                      <div>✅ Returned on {new Date(loan.returnedDate).toLocaleDateString('en-IN')}</div>
-                    )}
-                    {loan.notes && <div className="italic">📝 {loan.notes}</div>}
-                  </div>
+              <div className="flex items-center gap-3">
+                {/* Avatar initials */}
+                <div className="w-11 h-11 rounded-full bg-apple-blue/15 flex items-center justify-center shrink-0">
+                  <span className="text-[15px] font-bold text-apple-blue">
+                    {loan.borrowerName.charAt(0).toUpperCase()}
+                  </span>
                 </div>
 
-                {!loan.isReturned && (
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => handleMarkReturned(loan)}
-                      className="px-3 py-1.5 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors"
-                    >
-                      ✓ Returned
-                    </button>
-                    <button
-                      onClick={() => handleEdit(loan)}
-                      className="px-3 py-1.5 border text-sm rounded-lg hover:bg-accent transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(loan)}
-                      className="px-3 py-1.5 text-red-500 text-sm rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-[15px] text-foreground truncate">{loan.borrowerName}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {getDaysSince(loan.loanDate)} days ago
+                    {loan.expectedReturnDate && ` · Due ${new Date(loan.expectedReturnDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}
+                  </p>
+                  {loan.notes && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate italic">{loan.notes}</p>
+                  )}
+                </div>
+
+                <div className="text-right shrink-0">
+                  <p className="font-bold text-[15px] tabular-nums text-foreground">{formatINR(loan.amount)}</p>
+                  {loan.isReturned && (
+                    <p className="text-xs font-semibold text-apple-green mt-0.5">Returned</p>
+                  )}
+                  {isOverdue(loan) && (
+                    <p className="text-xs font-semibold text-apple-red mt-0.5">Overdue</p>
+                  )}
+                  {!loan.isReturned && !isOverdue(loan) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">Active</p>
+                  )}
+                </div>
               </div>
+
+              {/* Text-only action buttons — iOS style */}
+              {!loan.isReturned && (
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/40">
+                  <button onClick={() => handleMarkReturned(loan)}
+                    className="press-effect text-sm font-semibold text-apple-green">
+                    ✓ Mark Returned
+                  </button>
+                  <button onClick={() => handleEdit(loan)}
+                    className="press-effect text-sm font-semibold text-apple-blue">
+                    Edit
+                  </button>
+                  <button onClick={() => handleDelete(loan)}
+                    className="press-effect text-sm font-semibold text-apple-red ml-auto">
+                    Delete
+                  </button>
+                </div>
+              )}
+              {loan.isReturned && loan.returnedDate && (
+                <p className="text-xs text-muted-foreground mt-2 pt-2 border-t border-border/40">
+                  Returned {new Date(loan.returnedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              )}
             </div>
           ))}
         </div>

@@ -25,9 +25,7 @@ export default function AIAlerts({ month, year, budgetType = 'personal' }: AIAle
       const response = await fetch(
         `/api/ai/alerts?month=${month}&year=${year}&budgetType=${budgetType}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
           credentials: 'include',
         }
       );
@@ -52,87 +50,67 @@ export default function AIAlerts({ month, year, budgetType = 'personal' }: AIAle
 
   if (loading) {
     return (
-      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 animate-pulse">
+      <div className="bg-card rounded-xl shadow-apple-sm p-4 animate-pulse">
         <div className="flex items-center gap-2 mb-3">
-          <div className="w-6 h-6 bg-amber-200 dark:bg-amber-700 rounded-full"></div>
-          <div className="h-4 w-32 bg-amber-200 dark:bg-amber-700 rounded"></div>
+          <div className="w-8 h-8 bg-secondary rounded-[8px]" />
+          <div className="h-4 w-32 bg-secondary rounded" />
         </div>
         <div className="space-y-2">
-          <div className="h-3 bg-amber-200 dark:bg-amber-700 rounded w-full"></div>
-          <div className="h-3 bg-amber-200 dark:bg-amber-700 rounded w-3/4"></div>
+          <div className="h-3 bg-secondary rounded w-full" />
+          <div className="h-3 bg-secondary rounded w-3/4" />
         </div>
       </div>
     );
   }
 
-  if (error || alerts.length === 0) {
-    return null;
-  }
+  if (error || alerts.length === 0) return null;
 
-  // Determine the alert theme based on content
-  const hasWarning = alerts.some(a => a.includes('⚠️') || a.includes('🚨') || a.toLowerCase().includes('warning'));
   const hasCritical = alerts.some(a => a.includes('🚨') || a.toLowerCase().includes('critical') || a.toLowerCase().includes('over budget'));
-  const isPositive = alerts.some(a => a.includes('✅') || a.includes('👍') || a.toLowerCase().includes('great') || a.toLowerCase().includes('good'));
+  const hasWarning  = alerts.some(a => a.includes('⚠️') || a.toLowerCase().includes('warning'));
+  const isPositive  = alerts.some(a => a.includes('✅') || a.includes('👍') || a.toLowerCase().includes('great') || a.toLowerCase().includes('good'));
 
-  const bgClass = hasCritical
-    ? 'bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/40 dark:to-orange-950/30 border-red-300 dark:border-red-800'
-    : hasWarning
-    ? 'bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800'
-    : isPositive
-    ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800'
-    : 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800';
+  const severity = hasCritical ? 'critical' : hasWarning ? 'warning' : isPositive ? 'positive' : 'info';
 
-  const textClass = hasCritical
-    ? 'text-red-900 dark:text-red-100'
-    : hasWarning
-    ? 'text-amber-900 dark:text-amber-100'
-    : isPositive
-    ? 'text-green-900 dark:text-green-100'
-    : 'text-blue-900 dark:text-blue-100';
+  const severityConfig = {
+    critical: { bg: 'bg-apple-red/8 dark:bg-apple-red/12',       border: 'border-apple-red',    icon: '🚨', label: 'Urgent Alert',     color: 'text-apple-red'    },
+    warning:  { bg: 'bg-apple-orange/8 dark:bg-apple-orange/12',  border: 'border-apple-orange', icon: '⚠️', label: 'Attention Needed', color: 'text-apple-orange' },
+    positive: { bg: 'bg-apple-green/8 dark:bg-apple-green/12',    border: 'border-apple-green',  icon: '✅', label: 'Great Progress!',   color: 'text-apple-green'  },
+    info:     { bg: 'bg-apple-blue/8 dark:bg-apple-blue/10',      border: 'border-apple-blue',   icon: '💡', label: 'Smart Tips',        color: 'text-apple-blue'   },
+  };
 
-  const headerIcon = hasCritical ? '🚨' : hasWarning ? '⚠️' : isPositive ? '✅' : '💡';
-  const headerText = hasCritical
-    ? 'Urgent Alert'
-    : hasWarning
-    ? 'Attention Needed'
-    : isPositive
-    ? 'Great Progress!'
-    : 'Smart Tips';
-
-  const budgetLabel = budgetType === 'family' ? '👨‍👩‍👧‍👦 Family' : '👤 Personal';
+  const cfg = severityConfig[severity];
 
   return (
-    <div className={`${bgClass} border rounded-2xl p-4 sm:p-5 animate-in fade-in slide-in-from-top-2 shadow-sm`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className={`flex items-center gap-2 ${textClass}`}>
-          <span className="text-xl">{headerIcon}</span>
-          <h3 className="font-bold text-sm tracking-tight uppercase">{headerText}</h3>
+    <div className="bg-card rounded-xl shadow-apple-sm overflow-hidden animate-in">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className={`w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 ${cfg.bg} border-l-[3px] ${cfg.border}`}>
+            <span className="text-sm">{cfg.icon}</span>
+          </div>
+          <h3 className="text-[15px] font-semibold text-foreground">{cfg.label}</h3>
         </div>
-        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-white/50 dark:bg-gray-800/50 px-2 py-1 rounded-full">
-          {budgetLabel}
-        </span>
+        <button
+          onClick={fetchAlerts}
+          className="press-effect text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
       </div>
 
-      <ul className="space-y-3">
+      {/* Alert items as left-border callouts */}
+      <div className="px-4 pb-4 space-y-2">
         {alerts.map((alert, index) => (
-          <li
+          <div
             key={index}
-            className={`flex items-start gap-3 text-sm ${textClass.replace('900', '800').replace('100', '200/90')} bg-white/40 dark:bg-gray-900/20 rounded-xl p-3`}
+            className={`${cfg.bg} border-l-[3px] ${cfg.border} rounded-xl p-3.5 text-sm text-foreground leading-relaxed`}
           >
-            <span className="leading-relaxed">{alert}</span>
-          </li>
+            {alert}
+          </div>
         ))}
-      </ul>
-
-      <button
-        onClick={fetchAlerts}
-        className="mt-4 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
-      >
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        Refresh
-      </button>
+      </div>
     </div>
   );
 }

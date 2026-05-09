@@ -9,8 +9,8 @@ const DEBUG = process.env.NODE_ENV === 'development';
 const log = DEBUG ? console.log.bind(console, '[Auth]') : () => {};
 
 // Token refresh configuration
-const ACCESS_TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // 10 minutes
-const MIN_REFRESH_INTERVAL = 30 * 1000; // Minimum 30 seconds between refreshes to prevent spam
+const ACCESS_TOKEN_REFRESH_INTERVAL = 90 * 60 * 1000; // 90 minutes (token lives 2h, refresh at 90min)
+const MIN_REFRESH_INTERVAL = 60 * 1000; // Minimum 60 seconds between refreshes
 const BACKGROUND_REFRESH_THRESHOLD = 5 * 60 * 1000; // Refresh if backgrounded > 5 minutes
 
 interface AuthContextType {
@@ -334,10 +334,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   // Show loading spinner while checking auth
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Checking authentication...</p>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-apple-blue to-apple-indigo flex items-center justify-center shadow-apple-md">
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="flex gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-apple-blue animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </div>
       </div>
     );

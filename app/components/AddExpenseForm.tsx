@@ -18,40 +18,42 @@ const PREDEFINED_CATEGORIES = [
   'Shopping',
 ];
 
-// Safely evaluate mathematical expressions
-// Only allows numbers and basic operators (+, -, *, /)
+const CATEGORY_ICONS: Record<string, string> = {
+  Food: '🍔',
+  Transport: '🚇',
+  Utilities: '💡',
+  Entertainment: '🎬',
+  Healthcare: '🏥',
+  Shopping: '🛍️',
+  Other: '···',
+};
+
 function evaluateExpression(expr: string): { value: number | null; isExpression: boolean; error: string | null } {
   if (!expr || expr.trim() === '') {
     return { value: null, isExpression: false, error: null };
   }
 
-  // Remove all whitespace
   const cleanExpr = expr.replace(/\s/g, '');
 
-  // Check if it's a simple number
   const simpleNumber = parseFloat(cleanExpr);
   if (!isNaN(simpleNumber) && /^-?\d*\.?\d+$/.test(cleanExpr)) {
     return { value: simpleNumber, isExpression: false, error: null };
   }
 
-  // Check if expression contains only valid characters (numbers, operators, parentheses, decimal points)
   if (!/^[\d+\-*/().]+$/.test(cleanExpr)) {
     return { value: null, isExpression: true, error: 'Invalid characters' };
   }
 
-  // Check for empty parentheses or invalid operator sequences
   if (/\(\)/.test(cleanExpr) || /[+\-*/]{2,}/.test(cleanExpr)) {
     return { value: null, isExpression: true, error: 'Invalid expression' };
   }
 
   try {
-    // Tokenize the expression
     const tokens = cleanExpr.match(/(\d+\.?\d*|[+\-*/()])/g);
     if (!tokens) {
       return { value: null, isExpression: true, error: 'Invalid expression' };
     }
 
-    // Use a simple expression parser (shunting-yard algorithm)
     const outputQueue: (number | string)[] = [];
     const operatorStack: string[] = [];
     const precedence: Record<string, number> = { '+': 1, '-': 1, '*': 2, '/': 2 };
@@ -68,7 +70,7 @@ function evaluateExpression(expr: string): { value: number | null; isExpression:
         if (operatorStack.length === 0) {
           return { value: null, isExpression: true, error: 'Mismatched parentheses' };
         }
-        operatorStack.pop(); // Remove the '('
+        operatorStack.pop();
       } else if (['+', '-', '*', '/'].includes(token)) {
         while (
           operatorStack.length > 0 &&
@@ -89,7 +91,6 @@ function evaluateExpression(expr: string): { value: number | null; isExpression:
       outputQueue.push(op);
     }
 
-    // Evaluate the RPN expression
     const evalStack: number[] = [];
     for (const token of outputQueue) {
       if (typeof token === 'number') {
@@ -123,7 +124,6 @@ function evaluateExpression(expr: string): { value: number | null; isExpression:
       return { value: null, isExpression: true, error: 'Result is too large' };
     }
 
-    // Round to 2 decimal places
     return { value: Math.round(result * 100) / 100, isExpression: true, error: null };
   } catch {
     return { value: null, isExpression: true, error: 'Invalid expression' };
@@ -143,16 +143,13 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Evaluate the expression in real-time
   const expressionResult = useMemo(() => evaluateExpression(amountInput), [amountInput]);
   const calculatedAmount = expressionResult.value;
   const isExpression = expressionResult.isExpression;
   const expressionError = expressionResult.error;
 
-  // Convert expression to calculated value when user leaves the field or presses "="
   const convertExpressionToResult = useCallback(() => {
     if (isExpression && calculatedAmount !== null && !expressionError) {
-      // Replace the expression with the calculated result
       setAmountInput(calculatedAmount.toString());
     }
   }, [isExpression, calculatedAmount, expressionError]);
@@ -161,15 +158,13 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
     convertExpressionToResult();
   }, [convertExpressionToResult]);
 
-  // Handle "=" key press to convert expression (calculator-like behavior)
   const handleAmountKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === '=' || e.key === 'Enter') {
-      e.preventDefault(); // Prevent "=" from being typed or form submission
+      e.preventDefault();
       convertExpressionToResult();
     }
   }, [convertExpressionToResult]);
 
-  // AI category suggestion
   const getAISuggestion = useCallback(async (description: string) => {
     if (!description || description.trim().length < 3) {
       setAiSuggestion('');
@@ -197,7 +192,6 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
 
   const handleNoteChange = (value: string) => {
     setNote(value);
-    // Trigger AI suggestion when user types in note
     if (value.length >= 3) {
       getAISuggestion(value);
     } else {
@@ -230,7 +224,6 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
         return;
       }
 
-      // Validate calculated amount
       if (calculatedAmount === null || calculatedAmount <= 0) {
         setError(expressionError || 'Please enter a valid amount');
         setLoading(false);
@@ -287,24 +280,26 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   };
 
   return (
-    <div className="bg-card text-card-foreground rounded-xl border shadow-sm animate-in">
-      <div className="p-6 border-b">
+    <div className="bg-card rounded-2xl shadow-apple-md overflow-hidden animate-in">
+      {/* Header */}
+      <div className="px-5 pt-5 pb-4 border-b border-border/40">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="h-9 w-9 rounded-[10px] bg-apple-blue/10 flex items-center justify-center">
+            <svg className="w-5 h-5 text-apple-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Add Expense</h2>
-            <p className="text-sm text-muted-foreground">Track a new transaction</p>
+            <h2 className="text-[17px] font-semibold tracking-tight">Add Expense</h2>
+            <p className="text-xs text-muted-foreground">Track a new transaction</p>
           </div>
         </div>
       </div>
 
-      <div className="p-6 space-y-6">
+      <form onSubmit={handleSubmit}>
+        {/* Error banner */}
         {error && (
-          <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium flex items-center gap-2">
+          <div className="mx-4 mt-4 p-3 rounded-xl bg-apple-red/8 border border-apple-red/20 text-apple-red text-sm font-medium flex items-center gap-2 animate-in">
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -312,128 +307,115 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium leading-none">
-                  Amount (₹)
-                </label>
-                {isExpression && calculatedAmount !== null && (
-                  <span className="text-xs text-primary font-medium animate-in fade-in">
-                    = {formatINR(calculatedAmount)}
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-muted-foreground font-medium">₹</span>
-                {/*
-                  Keyboard strategy for math expressions:
-                  - type="text" allows any characters including math operators
-                  - pattern attribute hints at valid characters without restricting input
-                  - inputMode is intentionally omitted to let each platform decide:
-                    - iOS: Shows standard keyboard with easy access to numbers/symbols
-                    - Android: Shows alphanumeric keyboard with symbol access
-                  - For pure numeric input, inputMode="decimal" would be better,
-                    but it blocks +, -, *, / operators needed for math expressions
-                */}
-                <input
-                  type="text"
-                  pattern="[0-9+\-*/().\s]*"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  enterKeyHint="done"
-                  value={amountInput}
-                  onChange={(e) => setAmountInput(e.target.value)}
-                  onKeyDown={handleAmountKeyDown}
-                  onBlur={handleAmountBlur}
-                  required
-                  className={`flex h-10 w-full rounded-md border bg-background pl-7 pr-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200 ${
-                    expressionError ? 'border-destructive' : 'border-input'
-                  }`}
-                  placeholder="0.00 or 130+140 (press = to calculate)"
-                />
-              </div>
-              {/* Expression helper text - shows while typing expression */}
-              {amountInput && !expressionError && isExpression && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1 animate-in fade-in">
-                  <svg className="w-3 h-3 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Calculating: {calculatedAmount !== null ? calculatedAmount : '...'}
-                </p>
-              )}
-              {expressionError && (
-                <p className="text-xs text-destructive animate-in fade-in">{expressionError}</p>
-              )}
-              {!amountInput && (
-                <p className="text-xs text-muted-foreground">Tip: Enter math like 100+50*2, press = to calculate</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {PREDEFINED_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-                <option value="Other">Other (Custom)</option>
-              </select>
-            </div>
+        {/* Calculator-style amount display */}
+        <div className="px-5 pt-5 pb-2 text-right">
+          <div className={`text-[48px] font-thin tabular-nums leading-none tracking-tight transition-colors ${
+            expressionError ? 'text-apple-red' : 'text-foreground'
+          }`}>
+            {amountInput ? `₹${amountInput}` : '₹0'}
           </div>
-
-          {category === 'Other' && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium leading-none">
-                Custom Category Name
-              </label>
-              <input
-                type="text"
-                value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
-                maxLength={50}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
-                placeholder="e.g., Groceries"
-                required
-              />
-            </div>
+          {isExpression && calculatedAmount !== null && !expressionError && (
+            <p className="text-sm text-apple-green font-medium mt-1 animate-in">
+              = {formatINR(calculatedAmount)}
+            </p>
           )}
+          {expressionError && (
+            <p className="text-xs text-apple-red mt-1 animate-in">{expressionError}</p>
+          )}
+        </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium leading-none">
-              Date
-            </label>
+        {/* Amount input (functional but visually minimal) */}
+        <div className="px-5 pb-4">
+          <input
+            type="text"
+            pattern="[0-9+\-*/().\s]*"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            enterKeyHint="done"
+            value={amountInput}
+            onChange={(e) => setAmountInput(e.target.value)}
+            onKeyDown={handleAmountKeyDown}
+            onBlur={handleAmountBlur}
+            required
+            className="w-full h-10 rounded-xl bg-secondary/60 border-0 px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-apple-blue/40 transition-all duration-250"
+            placeholder="Enter amount or math expression (e.g. 130+140)"
+          />
+          {!amountInput && (
+            <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
+              Tip: Enter math like 100+50*2, press = to calculate
+            </p>
+          )}
+        </div>
+
+        {/* Category pill selector */}
+        <div className="px-5 pb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+            Category
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[...PREDEFINED_CATEGORIES, 'Other'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`press-effect inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 ease-apple-ease ${
+                  category === cat
+                    ? 'bg-apple-blue text-white shadow-apple-sm'
+                    : 'bg-secondary text-secondary-foreground hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                }`}
+              >
+                <span>{CATEGORY_ICONS[cat] ?? '📌'}</span>
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Custom category */}
+        {category === 'Other' && (
+          <div className="px-5 pb-4 animate-in">
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value.slice(0, 50))}
+              maxLength={50}
+              className="w-full h-10 rounded-xl bg-secondary/60 border-0 px-4 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-apple-blue/40 transition-all duration-250"
+              placeholder="Custom category name (e.g. Groceries)"
+              required
+            />
+          </div>
+        )}
+
+        {/* Grouped rows: Date, Note, Recurring */}
+        <div className="mx-4 mb-4 bg-secondary/40 rounded-xl overflow-hidden">
+          {/* Date row */}
+          <div className="grouped-row flex items-center justify-between">
+            <span className="text-sm font-medium text-foreground">Date</span>
             <input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200"
+              className="text-sm text-apple-blue border-0 bg-transparent text-right focus:ring-0 focus:outline-none cursor-pointer"
             />
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium leading-none">
-                Note <span className="text-muted-foreground font-normal">(optional)</span>
-              </label>
+          {/* Note row */}
+          <div className="grouped-row">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-sm font-medium text-foreground">
+                Note
+                <span className="ml-1 text-xs font-normal text-muted-foreground">(optional)</span>
+              </span>
               {aiLoading && (
-                <span className="text-xs text-primary animate-pulse flex items-center gap-1">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                <span className="text-[11px] text-apple-blue animate-pulse flex items-center gap-1">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-apple-blue opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-apple-blue"></span>
                   </span>
-                  AI Analyzing...
+                  AI analyzing
                 </span>
               )}
             </div>
@@ -441,22 +423,22 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
               value={note}
               onChange={(e) => handleNoteChange(e.target.value)}
               maxLength={500}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none transition-all duration-200"
-              placeholder="Add a note... (AI will suggest category)"
+              rows={2}
+              className="w-full bg-transparent border-0 text-sm resize-none focus:ring-0 focus:outline-none placeholder:text-muted-foreground/60"
+              placeholder="Add a note… (AI will suggest category)"
             />
-            
             {aiSuggestion && (
-              <div className="mt-2 p-3 bg-primary/5 border border-primary/20 rounded-md flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+              <div className="mt-2 p-2.5 bg-apple-blue/8 border border-apple-blue/20 rounded-xl flex items-center justify-between animate-spring-in">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-lg">✨</span>
-                  <span className="text-muted-foreground">
+                  <span>✨</span>
+                  <span className="text-muted-foreground text-xs">
                     AI suggests: <span className="font-semibold text-foreground">{aiSuggestion}</span>
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={applyAISuggestion}
-                  className="text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
+                  className="press-effect text-xs font-semibold text-apple-blue"
                 >
                   Apply
                 </button>
@@ -464,28 +446,31 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
             )}
           </div>
 
-          <div className="flex items-center space-x-2 rounded-md border p-3 bg-muted/30">
-            <input
-              type="checkbox"
-              id="recurring"
-              checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <label htmlFor="recurring" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 select-none cursor-pointer">
-              Recurring expense
-            </label>
+          {/* Recurring toggle row */}
+          <div className="grouped-row flex items-center justify-between">
+            <span className="text-sm font-medium text-foreground">Recurring</span>
+            <button
+              type="button"
+              onClick={() => setIsRecurring(!isRecurring)}
+              className={`relative w-[51px] h-[31px] rounded-full transition-colors duration-300 ease-spring shrink-0 ${
+                isRecurring ? 'bg-apple-green' : 'bg-neutral-300 dark:bg-neutral-600'
+              }`}
+            >
+              <span
+                className={`absolute top-[2px] w-[27px] h-[27px] bg-white rounded-full shadow-apple-sm transition-transform duration-300 ease-spring ${
+                  isRecurring ? 'translate-x-[21px]' : 'translate-x-[2px]'
+                }`}
+              />
+            </button>
           </div>
 
+          {/* Recurring frequency (expands when toggled) */}
           {isRecurring && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-              <label className="text-sm font-medium leading-none">
-                Frequency
-              </label>
+            <div className="grouped-row animate-in">
               <select
                 value={recurringFrequency}
                 onChange={(e) => setRecurringFrequency(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full bg-transparent border-0 text-sm text-apple-blue focus:ring-0 focus:outline-none cursor-pointer"
               >
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
@@ -494,16 +479,29 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
               </select>
             </div>
           )}
+        </div>
 
+        {/* Submit button */}
+        <div className="px-4 pb-5">
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 w-full"
+            className="press-effect w-full h-[50px] rounded-xl bg-apple-blue text-white font-semibold text-[15px] shadow-apple-md hover:bg-apple-blue/90 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
           >
-            {loading ? 'Adding Expense...' : 'Add Expense'}
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Adding…
+              </>
+            ) : (
+              'Add Expense'
+            )}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 }

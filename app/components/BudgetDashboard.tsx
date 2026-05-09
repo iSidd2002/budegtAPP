@@ -336,11 +336,20 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-gray-600 dark:text-gray-400">Loading...</div>;
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-12 bg-secondary rounded-xl w-3/4" />
+        <div className="h-32 bg-secondary rounded-2xl" />
+        <div className="h-48 bg-secondary rounded-2xl" />
+        <div className="h-24 bg-secondary rounded-2xl" />
+      </div>
+    );
   }
 
   if (!data) {
-    return <div className="text-center py-8 text-red-600 dark:text-red-400">{error}</div>;
+    return (
+      <div className="text-center py-8 text-apple-red font-medium">{error}</div>
+    );
   }
 
   const { summary, categoryBreakdown, expenses } = data;
@@ -358,12 +367,12 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       {/* Header with Theme Toggle and Export - Mobile Optimized */}
       <div className="flex justify-between items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0 ${
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-[10px] flex items-center justify-center shrink-0 ${
             budgetType === 'family'
-              ? 'bg-gradient-to-br from-purple-500 to-pink-600'
-              : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+              ? 'bg-apple-purple/15'
+              : 'bg-apple-blue/15'
           }`}>
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 sm:w-5 sm:h-5 ${budgetType === 'family' ? 'text-apple-purple' : 'text-apple-blue'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               {budgetType === 'family' ? (
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               ) : (
@@ -372,8 +381,8 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
             </svg>
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 dark:text-white truncate">Dashboard</h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize">{budgetType} Budget</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground truncate">Dashboard</h1>
+            <p className="text-xs text-muted-foreground capitalize">{budgetType} Budget</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -382,11 +391,7 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
             <button
               onClick={() => setShowExportMenu(!showExportMenu)}
               disabled={exporting}
-              className={`p-2.5 sm:px-3 sm:py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center gap-1.5 ${
-                budgetType === 'family'
-                  ? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:hover:bg-purple-900/50'
-                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:hover:bg-indigo-900/50'
-              }`}
+              className="press-effect p-2.5 sm:px-3 sm:py-2 rounded-[10px] text-sm font-medium transition-all duration-200 min-h-[40px] min-w-[40px] flex items-center justify-center gap-1.5 bg-secondary text-muted-foreground hover:text-foreground"
               title={`Export ${budgetType} expenses`}
             >
               {exporting ? (
@@ -404,38 +409,34 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
 
             {/* Export Dropdown Menu */}
             {showExportMenu && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div className="p-3 border-b border-gray-200 dark:border-gray-700">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Export {budgetType === 'family' ? '👨‍👩‍👧‍👦 Family' : '👤 Personal'} Expenses
+              <div className="absolute right-0 mt-2 w-52 glass rounded-xl shadow-apple-lg border-border/20 z-50 overflow-hidden animate-spring-in">
+                <div className="p-3 border-b border-border/40">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Export {budgetType === 'family' ? 'Family' : 'Personal'} Data
                   </p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
                     {new Date(year, month - 1).toLocaleString('default', { month: 'long' })} {year}
                   </p>
                 </div>
-                <div className="p-1">
+                <div className="p-1.5 space-y-0.5">
                   <button
                     onClick={() => handleExport('csv')}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="press-effect w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm rounded-lg hover:bg-secondary/60 transition-colors"
                   >
-                    <span className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                      <span className="text-sm">📊</span>
-                    </span>
+                    <span className="w-8 h-8 bg-apple-green/15 rounded-lg flex items-center justify-center text-base">📊</span>
                     <div>
-                      <p className="font-medium">CSV Format</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Excel, Google Sheets</p>
+                      <p className="font-medium text-foreground text-sm">CSV</p>
+                      <p className="text-[10px] text-muted-foreground">Excel, Google Sheets</p>
                     </div>
                   </button>
                   <button
                     onClick={() => handleExport('json')}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="press-effect w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm rounded-lg hover:bg-secondary/60 transition-colors"
                   >
-                    <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                      <span className="text-sm">📋</span>
-                    </span>
+                    <span className="w-8 h-8 bg-apple-blue/10 rounded-lg flex items-center justify-center text-base">📋</span>
                     <div>
-                      <p className="font-medium">JSON Format</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">For developers</p>
+                      <p className="font-medium text-foreground text-sm">JSON</p>
+                      <p className="text-[10px] text-muted-foreground">For developers</p>
                     </div>
                   </button>
                 </div>
@@ -449,50 +450,31 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       {/* Budget Type Tabs */}
       <BudgetTabs activeTab={budgetType} onTabChange={handleTabChange} />
 
-      {/* Month/Year Selector - Mobile Optimized */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Select Period</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Month</label>
-            <select
-              value={month}
-              onChange={(e) => setMonth(parseInt(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base font-medium min-h-[48px] appearance-none cursor-pointer transition-all duration-200"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'right 1rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em',
-              }}
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(2024, i).toLocaleString('default', { month: 'long' })}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Year</label>
-            <select
-              value={year}
-              onChange={(e) => setYear(parseInt(e.target.value))}
-              className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base font-medium min-h-[48px] appearance-none cursor-pointer transition-all duration-200"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                backgroundPosition: 'right 1rem center',
-                backgroundRepeat: 'no-repeat',
-                backgroundSize: '1.5em 1.5em',
-              }}
-            >
-              {Array.from({ length: 5 }, (_, i) => (
-                <option key={i} value={new Date().getFullYear() - 2 + i}>
-                  {new Date().getFullYear() - 2 + i}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* Month/Year Selector */}
+      <div className="bg-card rounded-xl shadow-apple-sm overflow-hidden">
+        <div className="flex items-center divide-x divide-border/40">
+          <select
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value))}
+            className="flex-1 px-4 py-3 bg-transparent border-0 text-sm font-medium text-foreground focus:ring-0 focus:outline-none cursor-pointer appearance-none"
+          >
+            {Array.from({ length: 12 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {new Date(2024, i).toLocaleString('default', { month: 'long' })}
+              </option>
+            ))}
+          </select>
+          <select
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value))}
+            className="w-28 px-4 py-3 bg-transparent border-0 text-sm font-medium text-foreground focus:ring-0 focus:outline-none cursor-pointer appearance-none"
+          >
+            {Array.from({ length: 5 }, (_, i) => (
+              <option key={i} value={new Date().getFullYear() - 2 + i}>
+                {new Date().getFullYear() - 2 + i}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -502,15 +484,15 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       {/* Today's Spending Widget */}
       <TodaySpending expenses={expenses} budgetType={budgetType} />
 
-      {/* Budget Summary Card - Mobile Optimized */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-3 sm:p-4 md:p-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl flex items-center justify-center shrink-0">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Budget Summary Card */}
+      <div className="bg-card rounded-2xl shadow-apple-md p-4 sm:p-6">
+        <div className="flex items-center gap-2 sm:gap-3 mb-5">
+          <div className="w-9 h-9 rounded-[10px] bg-apple-green/15 flex items-center justify-center shrink-0">
+            <svg className="w-5 h-5 text-apple-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
             </svg>
           </div>
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Budget Summary</h2>
+          <h2 className="text-[17px] font-semibold text-foreground">Budget Summary</h2>
         </div>
 
         {summary.budgetAmount ? (
@@ -528,117 +510,95 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
               />
             </div>
 
-            <div className="mb-6">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Monthly Progress</span>
-                <span className="text-sm font-bold text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                  {percentageSpent}%
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">
-                    {formatINR(summary.totalSpent)}
-                  </span>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    of {formatINR(summary.budgetAmount)}
-                  </span>
+            {/* Stat grid: Spent / Budget / Remaining */}
+            <div className="grid grid-cols-3 gap-2.5 mb-5">
+              {[
+                { label: 'Spent',     value: formatINR(summary.totalSpent),            color: 'text-apple-red'   },
+                { label: 'Budget',    value: formatINR(summary.budgetAmount!),          color: 'text-foreground'  },
+                { label: 'Left',      value: formatINR(Math.abs(summary.remaining || 0)), color: summary.remaining !== null && summary.remaining >= 0 ? 'text-apple-green' : 'text-apple-red' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className="bg-secondary/60 rounded-xl p-3 text-center">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+                  <p className={`text-sm font-bold tabular-nums ${color}`}>{value}</p>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                  <div
-                    className={`h-4 rounded-full transition-all duration-500 ${
-                      percentageSpent > 100
-                        ? 'bg-gradient-to-r from-red-500 to-red-600'
-                        : percentageSpent > 80
-                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
-                        : 'bg-gradient-to-r from-emerald-500 to-green-600'
-                    }`}
-                    style={{ width: `${Math.min(percentageSpent, 100)}%` }}
-                  />
-                </div>
-                <p className="text-sm font-medium text-center">
-                  {summary.remaining !== null && summary.remaining >= 0 ? (
-                    <span className="text-emerald-600 dark:text-emerald-400">
-                      {formatINR(summary.remaining)} remaining
-                    </span>
-                  ) : (
-                    <span className="text-red-600 dark:text-red-400">
-                      {formatINR(Math.abs(summary.remaining || 0))} over budget
-                    </span>
-                  )}
-                </p>
+              ))}
+            </div>
+
+            {/* Thin Apple-style progress bar */}
+            <div className="mb-5">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-medium text-muted-foreground">Monthly Progress</span>
+                <span className="text-xs font-bold text-foreground">{percentageSpent}%</span>
               </div>
+              <div className="w-full bg-secondary rounded-full h-2 overflow-hidden">
+                <div
+                  className={`h-2 rounded-full transition-all duration-700 ease-apple-ease ${
+                    percentageSpent > 100
+                      ? 'bg-apple-red'
+                      : percentageSpent > 80
+                      ? 'bg-apple-orange'
+                      : 'bg-apple-green'
+                  }`}
+                  style={{ width: `${Math.min(percentageSpent, 100)}%` }}
+                />
+              </div>
+              <p className="text-xs font-medium text-center mt-1.5">
+                {summary.remaining !== null && summary.remaining >= 0 ? (
+                  <span className="text-apple-green">{formatINR(summary.remaining)} remaining</span>
+                ) : (
+                  <span className="text-apple-red">{formatINR(Math.abs(summary.remaining || 0))} over budget</span>
+                )}
+              </p>
             </div>
 
             <div className="space-y-4 sm:space-y-5">
-              {/* Quick Increase Budget - Mobile Optimized */}
-              <div className="bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl p-3 sm:p-4 border border-emerald-200 dark:border-emerald-800">
-                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600 dark:text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span className="font-semibold text-sm sm:text-base text-emerald-800 dark:text-emerald-200">Quick Increase</span>
-                  </div>
+              {/* Quick Increase */}
+              <div className="bg-apple-green/6 dark:bg-apple-green/10 rounded-xl p-4 border-l-[3px] border-apple-green">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-semibold text-sm text-foreground">Quick Increase</span>
                   <button
                     type="button"
                     onClick={() => setShowIncreaseForm(!showIncreaseForm)}
-                    className="text-emerald-600 dark:text-emerald-400 active:text-emerald-700 dark:active:text-emerald-300 text-xs sm:text-sm font-medium min-h-[32px] sm:min-h-[36px] px-2 sm:px-3 touch-manipulation"
+                    className="press-effect text-xs font-semibold text-apple-green"
                   >
                     {showIncreaseForm ? 'Hide' : 'Show'}
                   </button>
                 </div>
-                
+
                 {showIncreaseForm ? (
-                  <form onSubmit={handleIncreaseBudget} className="space-y-3 sm:space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                      <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">+₹</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          value={increaseAmount}
-                          onChange={(e) => setIncreaseAmount(e.target.value)}
-                          placeholder="Amount to add"
-                          className="w-full pl-9 sm:pl-10 pr-3 py-3 sm:py-3.5 border border-emerald-300 dark:border-emerald-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-base font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                        />
-                      </div>
+                  <form onSubmit={handleIncreaseBudget} className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={increaseAmount}
+                        onChange={(e) => setIncreaseAmount(e.target.value)}
+                        placeholder="Amount to add"
+                        className="flex-1 h-10 rounded-xl bg-card border-0 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-apple-green/40"
+                      />
                       <button
                         type="submit"
                         disabled={settingBudget || !increaseAmount}
-                        className="px-4 sm:px-5 py-3 sm:py-3.5 bg-emerald-600 active:bg-emerald-700 text-white rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[48px] sm:min-h-[52px] touch-manipulation"
+                        className="press-effect px-4 h-10 bg-apple-green text-white rounded-xl text-sm font-semibold shadow-apple-sm disabled:opacity-40"
                       >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-sm sm:text-base">Add</span>
+                        Add
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2 sm:gap-3">
+                    <div className="flex flex-wrap gap-2">
                       {[1000, 2000, 5000, 10000].map((amount) => (
-                        <button
-                          key={amount}
-                          type="button"
-                          onClick={() => setIncreaseAmount(String(amount))}
-                          className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full active:bg-emerald-100 dark:active:bg-emerald-900/30 transition-colors min-h-[40px] sm:min-h-[44px] touch-manipulation"
-                        >
+                        <button key={amount} type="button" onClick={() => setIncreaseAmount(String(amount))}
+                          className="press-effect px-3 py-1.5 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-full">
                           +{formatINR(amount)}
                         </button>
                       ))}
                     </div>
                   </form>
                 ) : (
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                  <div className="flex flex-wrap gap-2">
                     {[1000, 2000, 5000, 10000].map((amount) => (
-                      <button
-                        key={amount}
-                        type="button"
-                        onClick={() => {
-                          setIncreaseAmount(String(amount));
-                          setShowIncreaseForm(true);
-                        }}
-                        className="px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium bg-white dark:bg-gray-800 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full active:bg-emerald-100 dark:active:bg-emerald-900/30 transition-colors min-h-[40px] sm:min-h-[44px] touch-manipulation"
-                      >
+                      <button key={amount} type="button"
+                        onClick={() => { setIncreaseAmount(String(amount)); setShowIncreaseForm(true); }}
+                        className="press-effect px-3 py-1.5 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-full">
                         +{formatINR(amount)}
                       </button>
                     ))}
@@ -646,43 +606,28 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                 )}
               </div>
 
-              {/* Update Budget Form - Mobile Optimized */}
-              <form onSubmit={handleSetBudget} className="space-y-3 sm:space-y-4">
-                <div className="relative">
-                  <span className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium text-sm sm:text-base">₹</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={budgetAmount}
-                    onChange={(e) => setBudgetAmount(e.target.value)}
-                    placeholder="Set new budget amount"
-                    className="w-full pl-8 sm:pl-10 pr-3 sm:pr-4 py-3 sm:py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-lg font-medium placeholder-gray-400 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                  />
-                </div>
+              {/* Set/Update Budget */}
+              <form onSubmit={handleSetBudget} className="space-y-3">
+                <input
+                  type="number"
+                  step="0.01"
+                  value={budgetAmount}
+                  onChange={(e) => setBudgetAmount(e.target.value)}
+                  placeholder="Set new budget amount"
+                  className="w-full h-[50px] rounded-xl bg-secondary/60 border-0 px-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-apple-blue/40"
+                />
                 <button
                   type="submit"
                   disabled={settingBudget || !budgetAmount}
-                  className={`w-full px-4 sm:px-6 py-3 sm:py-4 text-white rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 min-h-[48px] sm:min-h-[56px] flex items-center justify-center gap-2 sm:gap-3 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation ${
-                    budgetType === 'family'
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 active:from-purple-700 active:to-pink-700'
-                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 active:from-indigo-700 active:to-purple-700'
-                  }`}
+                  className="press-effect w-full h-[50px] bg-apple-blue text-white rounded-xl text-[15px] font-semibold shadow-apple-md hover:bg-apple-blue/90 transition-colors disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
                 >
                   {settingBudget ? (
-                    <>
-                      <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      Set {budgetType === 'family' ? 'Family' : 'Personal'} Budget
-                    </>
-                  )}
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  ) : null}
+                  {settingBudget ? 'Updating…' : `Set ${budgetType === 'family' ? 'Family' : 'Personal'} Budget`}
                 </button>
               </form>
 
@@ -690,45 +635,25 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                 type="button"
                 onClick={handleResetBudget}
                 disabled={resettingBudget}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-red-600 to-red-700 active:from-red-700 active:to-red-800 text-white rounded-xl text-base sm:text-lg font-semibold transition-all duration-200 min-h-[48px] sm:min-h-[56px] flex items-center justify-center gap-2 sm:gap-3 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-                title="Reset budget and optionally delete all expenses for this month"
+                className="press-effect w-full h-11 bg-apple-red/10 text-apple-red rounded-xl text-sm font-semibold hover:bg-apple-red/15 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
               >
-                {resettingBudget ? (
-                  <>
-                    <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Resetting...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Reset Budget & Clear Data
-                  </>
-                )}
+                {resettingBudget ? 'Resetting…' : 'Reset Budget & Clear Data'}
               </button>
             </div>
           </>
         ) : (
           <>
             {aiRecommendation && !loadingRecommendation && (
-              <div className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-                <div className="flex items-start space-x-2">
-                  <span className="text-lg">🤖</span>
+              <div className="mb-4 p-4 bg-apple-indigo/6 dark:bg-apple-indigo/10 border-l-[3px] border-apple-indigo rounded-xl animate-in">
+                <div className="flex items-start gap-2">
+                  <span>🤖</span>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-indigo-900 dark:text-indigo-100 mb-1">
+                    <p className="text-sm font-semibold text-foreground mb-1">
                       AI Recommendation: {formatINR(aiRecommendation.suggestedAmount)}
                     </p>
-                    <p className="text-xs text-indigo-700 dark:text-indigo-300">
-                      {aiRecommendation.reasoning}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setBudgetAmount(String(aiRecommendation.suggestedAmount))}
-                      className="mt-2 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg transition"
-                    >
+                    <p className="text-xs text-muted-foreground leading-relaxed">{aiRecommendation.reasoning}</p>
+                    <button type="button" onClick={() => setBudgetAmount(String(aiRecommendation.suggestedAmount))}
+                      className="press-effect mt-2 text-xs font-semibold text-apple-indigo">
                       Use This Amount
                     </button>
                   </div>
@@ -736,29 +661,24 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
               </div>
             )}
             {loadingRecommendation && (
-              <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600"></div>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  Getting AI recommendation...
-                </span>
+              <div className="mb-4 p-3 bg-secondary rounded-xl flex items-center gap-2 animate-pulse">
+                <div className="w-4 h-4 rounded-full border-2 border-apple-blue border-t-transparent animate-spin" />
+                <span className="text-xs text-muted-foreground">Getting AI recommendation…</span>
               </div>
             )}
-            <form onSubmit={handleSetBudget} className="flex flex-col sm:flex-row gap-2">
+            <form onSubmit={handleSetBudget} className="space-y-3">
               <input
                 type="number"
                 step="0.01"
                 value={budgetAmount}
                 onChange={(e) => setBudgetAmount(e.target.value)}
                 placeholder="Set monthly budget"
-                className="flex-1 px-3 py-2.5 sm:py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-base min-h-[44px] sm:min-h-auto"
+                className="w-full h-[50px] rounded-xl bg-secondary/60 border-0 px-4 text-base font-medium focus:outline-none focus:ring-2 focus:ring-apple-blue/40"
                 required
               />
-              <button
-                type="submit"
-                disabled={settingBudget}
-                className="px-4 py-2.5 sm:py-2 bg-indigo-600 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-indigo-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] sm:min-h-auto"
-              >
-                Set
+              <button type="submit" disabled={settingBudget}
+                className="press-effect w-full h-[50px] bg-apple-blue text-white rounded-xl font-semibold shadow-apple-md hover:bg-apple-blue/90 transition-colors disabled:opacity-40">
+                {settingBudget ? 'Setting…' : 'Set Budget'}
               </button>
             </form>
           </>
@@ -768,37 +688,63 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
       {/* AI Insights - Budget Type Aware */}
       <AIInsights month={month} year={year} budgetType={budgetType} />
 
-      {/* Category Breakdown */}
-      {Object.keys(categoryBreakdown).length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-          <h3 className="text-lg sm:text-lg font-bold text-gray-900 dark:text-white mb-4">By Category</h3>
-          <div className="space-y-3">
-            {Object.entries(categoryBreakdown)
-              .sort(([, a], [, b]) => b - a)
-              .map(([category, amount]) => (
-                <div key={category} className="flex justify-between items-center gap-2">
-                  <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300 truncate">{category}</span>
-                  <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatINR(amount)}</span>
+      {/* Category Breakdown — mini bar chart rows */}
+      {Object.keys(categoryBreakdown).length > 0 && (() => {
+        const sorted = Object.entries(categoryBreakdown).sort(([, a], [, b]) => b - a);
+        const maxAmount = sorted[0]?.[1] ?? 1;
+        return (
+          <div className="bg-card rounded-xl shadow-apple-sm p-4">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-[8px] bg-apple-indigo/15 flex items-center justify-center shrink-0">
+                <svg className="w-4 h-4 text-apple-indigo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-[15px] font-semibold text-foreground">By Category</h3>
+            </div>
+            <div className="space-y-3">
+              {sorted.map(([cat, amount]) => (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="text-sm text-foreground w-24 truncate">{cat}</span>
+                  <div className="flex-1 bg-secondary rounded-full h-1.5">
+                    <div
+                      className="h-1.5 rounded-full bg-apple-blue transition-all duration-700 ease-apple-ease"
+                      style={{ width: `${(amount / maxAmount) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums text-foreground w-20 text-right">{formatINR(amount)}</span>
                 </div>
               ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
-      {/* Recent Expenses */}
+      {/* Recent Expenses — icon bubble list */}
       {expenses.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-3 sm:p-4 md:p-6">
-          <h3 className="text-lg sm:text-lg font-bold text-gray-900 dark:text-white mb-4">Recent Expenses</h3>
-          <div className="space-y-3">
+        <div className="bg-card rounded-xl shadow-apple-sm overflow-hidden">
+          <div className="flex items-center gap-2.5 p-4 border-b border-border/40">
+            <div className="w-8 h-8 rounded-[8px] bg-apple-orange/15 flex items-center justify-center shrink-0">
+              <svg className="w-4 h-4 text-apple-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-[15px] font-semibold text-foreground">Recent Expenses</h3>
+          </div>
+          <div>
             {expenses.slice(0, 5).map((exp) => (
-              <div key={exp.id} className="flex justify-between items-start gap-2 py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
+              <div key={exp.id} className="grouped-row flex items-center gap-3">
+                <div className="w-9 h-9 rounded-[10px] bg-apple-blue/10 flex items-center justify-center shrink-0 text-base">
+                  {exp.category === 'Food' ? '🍔' : exp.category === 'Transport' ? '🚇' : exp.category === 'Utilities' ? '💡' : exp.category === 'Entertainment' ? '🎬' : exp.category === 'Healthcare' ? '🏥' : exp.category === 'Shopping' ? '🛍️' : '📌'}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-xs sm:text-sm text-gray-900 dark:text-white truncate">{exp.category}</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    {new Date(exp.date).toLocaleDateString()}
+                  <p className="text-sm font-medium text-foreground truncate">{exp.category}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(exp.date).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}
+                    {exp.note && ` · ${exp.note}`}
                   </p>
                 </div>
-                <span className="font-semibold text-xs sm:text-sm text-gray-900 dark:text-white whitespace-nowrap">{formatINR(exp.amount)}</span>
+                <span className="text-sm font-semibold tabular-nums text-foreground whitespace-nowrap">{formatINR(exp.amount)}</span>
               </div>
             ))}
           </div>
