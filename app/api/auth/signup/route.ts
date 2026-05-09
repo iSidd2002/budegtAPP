@@ -113,15 +113,14 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('[Signup] Validation failed:', JSON.stringify(error.errors));
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: error.errors[0]?.message || 'Validation failed', details: error.errors },
         { status: 400, headers: getSecureHeaders() }
       );
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Signup error:', error);
-    }
+    console.error('[Signup] Unexpected error:', error);
 
     return NextResponse.json(
       { error: 'Internal server error' },

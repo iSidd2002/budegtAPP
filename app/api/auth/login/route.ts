@@ -166,16 +166,14 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('[Login] Validation failed:', JSON.stringify(error.errors));
       return NextResponse.json(
-        { error: 'Validation failed', details: error.errors },
+        { error: error.errors[0]?.message || 'Validation failed', details: error.errors },
         { status: 400, headers: getSecureHeaders() }
       );
     }
 
-    // Log error in development only
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Login error:', error);
-    }
+    console.error('[Login] Unexpected error:', error);
 
     return NextResponse.json(
       { error: 'Internal server error' },
