@@ -1,25 +1,32 @@
 import { z } from 'zod';
 
-/**
- * Password validation with security requirements
- * - Minimum 8 characters
- * - Maximum 128 characters (prevent DoS via bcrypt)
- * - At least one lowercase letter
- * - At least one uppercase letter
- * - At least one number
- */
+// Top-50 most commonly breached passwords — rejected outright
+const COMMON_PASSWORDS = new Set([
+  'password', 'password1', '12345678', '123456789', '1234567890',
+  'qwerty123', 'iloveyou', 'admin123', 'letmein', 'welcome1',
+  'monkey123', 'dragon123', 'master123', 'abc12345', 'sunshine1',
+  'princess1', 'shadow123', 'superman', 'michael1', 'football',
+  'baseball', 'pokemon123', 'qwertyui', 'hello123', 'passw0rd',
+  'p@ssword', 'p@ssw0rd', 'pass1234', 'test1234', 'user1234',
+  'login123', 'changeme', 'welcome!', 'secret123', 'trustno1',
+  'starwars', 'whatever', 'freedom1', 'jordan23', 'ranger123',
+  'batman123', 'soccer123', 'hockey123', 'hunter12', 'buster12',
+  'thomas12', 'tigger12', 'robert12', 'charlie1', 'donald123',
+]);
+
 const passwordSchema = z
   .string()
-  .min(6, 'Password must be at least 6 characters')
-  .max(128, 'Password must not exceed 128 characters');
+  .min(8, 'Password must be at least 8 characters')
+  .max(128, 'Password must not exceed 128 characters')
+  .refine(
+    (p) => !COMMON_PASSWORDS.has(p.toLowerCase()),
+    'Password is too common — please choose a more unique password'
+  );
 
-/**
- * Email validation with normalization
- */
 const emailSchema = z
   .string()
   .email('Invalid email address')
-  .max(254, 'Email must not exceed 254 characters') // RFC 5321
+  .max(254, 'Email must not exceed 254 characters')
   .toLowerCase()
   .trim();
 
@@ -35,7 +42,7 @@ export const LoginSchema = z.object({
 });
 
 export const RefreshTokenSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required').max(100, 'Invalid token format'),
+  refreshToken: z.string().min(1, 'Refresh token is required').max(200, 'Invalid token format'),
 });
 
 // Budget schemas
@@ -52,7 +59,7 @@ export const CreateExpenseSchema = z.object({
   category: z.string()
     .min(1, 'Category is required')
     .max(50, 'Category must be 50 characters or less')
-    .regex(/^[a-zA-Z0-9\s\-&()]+$/, 'Category can only contain letters, numbers, spaces, hyphens, ampersands, and parentheses'),
+    .regex(/^[a-zA-Z0-9\s\-&()]+$/, 'Category contains invalid characters'),
   date: z.string().datetime('Invalid date format'),
   note: z.string().max(500).optional(),
   budgetType: z.enum(['personal', 'family']).optional().default('personal'),
@@ -67,7 +74,6 @@ export const DeleteExpenseSchema = z.object({
   id: z.string().min(1, 'Expense ID is required'),
 });
 
-// Query schemas
 export const GetExpensesSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
@@ -78,14 +84,11 @@ export const GetExpensesSchema = z.object({
 
 // Loan schemas
 export const CreateLoanSchema = z.object({
-  borrowerName: z.string()
-    .min(1, 'Borrower name is required')
-    .max(100, 'Borrower name must be 100 characters or less')
-    .trim(),
+  borrowerName: z.string().min(1, 'Borrower name is required').max(100).trim(),
   amount: z.number().positive('Amount must be positive'),
   loanDate: z.string().datetime('Invalid date format'),
   expectedReturnDate: z.string().datetime('Invalid date format').optional().nullable(),
-  notes: z.string().max(500, 'Notes must be 500 characters or less').optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
 export const UpdateLoanSchema = CreateLoanSchema.partial().extend({

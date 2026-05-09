@@ -277,18 +277,21 @@ export function getSecureHeaders(): Record<string, string> {
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
     }),
 
-    // Content Security Policy - adjust based on your needs
+    // Content Security Policy
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires these
+      "script-src 'self' 'unsafe-inline'",   // unsafe-eval removed; unsafe-inline needed for Next.js hydration
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
+      "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
     ].join('; '),
+    'X-Permitted-Cross-Domain-Policies': 'none',
   };
 
   return headers;
