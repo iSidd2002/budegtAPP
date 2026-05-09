@@ -1,5 +1,5 @@
 // Service Worker for Budget App PWA
-const CACHE_NAME = 'budget-app-v3';
+const CACHE_NAME = 'budget-app-v4';
 const OFFLINE_URL = '/offline.html';
 
 // Only pre-cache the minimal static assets needed for offline UX
