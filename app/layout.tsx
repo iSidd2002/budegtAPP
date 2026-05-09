@@ -14,21 +14,22 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
-    title: 'Budget App',
+    statusBarStyle: 'black-translucent',
+    title: 'Budget',
   },
-  applicationName: 'Budget App',
+  applicationName: 'Budget',
   keywords: ['budget', 'expense tracker', 'finance', 'money management', 'AI budgeting'],
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#4f46e5' },
-    { media: '(prefers-color-scheme: dark)', color: '#1f2937' },
+    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
+    { media: '(prefers-color-scheme: dark)', color: '#0a0a0a' },
   ],
 };
 
@@ -47,8 +48,8 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Budget App" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Budget" />
 
         {/* Apple Touch Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-152x152.svg" />
@@ -61,8 +62,8 @@ export default function RootLayout({
         <link rel="icon" type="image/svg+xml" sizes="512x512" href="/icons/icon-512x512.svg" />
 
         {/* Theme Colors */}
-        <meta name="theme-color" content="#4f46e5" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
       </head>
       <body className={`${inter.className} bg-background text-foreground antialiased min-h-screen`}>
         <ServiceWorkerRegistration />
@@ -76,4 +77,3 @@ export default function RootLayout({
     </html>
   );
 }
-

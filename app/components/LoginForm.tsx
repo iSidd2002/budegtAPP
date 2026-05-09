@@ -51,9 +51,11 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 md:p-6 lg:p-8 relative overflow-hidden
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden
       bg-gradient-to-br from-sky-100 via-blue-50 to-indigo-100
-      dark:from-[#0a0a1a] dark:via-[#0d1b3e] dark:to-[#0a0a1a]">
+      dark:from-[#0a0a1a] dark:via-[#0d1b3e] dark:to-[#0a0a1a]"
+      style={{ padding: 'max(env(safe-area-inset-top), 24px) max(env(safe-area-inset-right), 16px) max(env(safe-area-inset-bottom), 24px) max(env(safe-area-inset-left), 16px)' }}
+    >
 
       {/* Decorative blur blobs */}
       <div className="absolute top-1/4 -left-40 w-80 h-80 rounded-full bg-apple-blue/30 blur-[80px] pointer-events-none" />

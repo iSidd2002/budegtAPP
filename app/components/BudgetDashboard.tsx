@@ -511,15 +511,15 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
             </div>
 
             {/* Stat grid: Spent / Budget / Remaining */}
-            <div className="grid grid-cols-3 gap-2.5 mb-5">
+            <div className="grid grid-cols-3 gap-2 mb-5">
               {[
-                { label: 'Spent',     value: formatINR(summary.totalSpent),            color: 'text-apple-red'   },
-                { label: 'Budget',    value: formatINR(summary.budgetAmount!),          color: 'text-foreground'  },
-                { label: 'Left',      value: formatINR(Math.abs(summary.remaining || 0)), color: summary.remaining !== null && summary.remaining >= 0 ? 'text-apple-green' : 'text-apple-red' },
+                { label: 'Spent',  value: formatINR(summary.totalSpent),               color: 'text-apple-red'   },
+                { label: 'Budget', value: formatINR(summary.budgetAmount!),             color: 'text-foreground'  },
+                { label: 'Left',   value: formatINR(Math.abs(summary.remaining || 0)),  color: summary.remaining !== null && summary.remaining >= 0 ? 'text-apple-green' : 'text-apple-red' },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-secondary/60 rounded-xl p-3 text-center">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
-                  <p className={`text-sm font-bold tabular-nums ${color}`}>{value}</p>
+                  <p className={`text-xs sm:text-sm font-bold tabular-nums leading-tight ${color}`}>{value}</p>
                 </div>
               ))}
             </div>
@@ -584,22 +584,22 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
                         Add
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-4 gap-2">
                       {[1000, 2000, 5000, 10000].map((amount) => (
                         <button key={amount} type="button" onClick={() => setIncreaseAmount(String(amount))}
-                          className="press-effect px-3 py-1.5 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-full">
-                          +{formatINR(amount)}
+                          className="press-effect py-2 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-xl min-h-[36px]">
+                          +{amount >= 1000 ? `${amount/1000}k` : amount}
                         </button>
                       ))}
                     </div>
                   </form>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     {[1000, 2000, 5000, 10000].map((amount) => (
                       <button key={amount} type="button"
                         onClick={() => { setIncreaseAmount(String(amount)); setShowIncreaseForm(true); }}
-                        className="press-effect px-3 py-1.5 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-full">
-                        +{formatINR(amount)}
+                        className="press-effect py-2 text-xs font-semibold bg-apple-green/10 text-apple-green rounded-xl min-h-[36px]">
+                        +{amount >= 1000 ? `${amount/1000}k` : amount}
                       </button>
                     ))}
                   </div>
@@ -704,15 +704,15 @@ export default function BudgetDashboard({ onResetSuccess, budgetType: externalBu
             </div>
             <div className="space-y-3">
               {sorted.map(([cat, amount]) => (
-                <div key={cat} className="flex items-center gap-3">
-                  <span className="text-sm text-foreground w-24 truncate">{cat}</span>
-                  <div className="flex-1 bg-secondary rounded-full h-1.5">
+                <div key={cat} className="flex items-center gap-2 sm:gap-3">
+                  <span className="text-sm text-foreground w-20 sm:w-24 truncate shrink-0">{cat}</span>
+                  <div className="flex-1 bg-secondary rounded-full h-1.5 min-w-0">
                     <div
                       className="h-1.5 rounded-full bg-apple-blue transition-all duration-700 ease-apple-ease"
                       style={{ width: `${(amount / maxAmount) * 100}%` }}
                     />
                   </div>
-                  <span className="text-sm font-semibold tabular-nums text-foreground w-20 text-right">{formatINR(amount)}</span>
+                  <span className="text-xs sm:text-sm font-semibold tabular-nums text-foreground shrink-0 text-right">{formatINR(amount)}</span>
                 </div>
               ))}
             </div>

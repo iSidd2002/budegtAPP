@@ -56,6 +56,9 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Respect iOS safe areas */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }
 
@@ -81,9 +84,37 @@
   opacity: 0.85;
 }
 
-/* iOS Settings grouped row */
+/* iOS Settings grouped row — 48px min touch target */
 .grouped-row {
-  @apply bg-card px-4 py-3 border-b border-border/40 last:border-b-0;
+  @apply bg-card px-4 py-3.5 border-b border-border/40 last:border-b-0;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.grouped-row.row-horizontal {
+  @apply flex-row items-center justify-between;
+}
+
+/* Safe-area padding utilities */
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.px-safe {
+  padding-left: max(env(safe-area-inset-left), 16px);
+  padding-right: max(env(safe-area-inset-right), 16px);
+}
+
+/* Minimum 44px touch target helper */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Custom Scrollbar */

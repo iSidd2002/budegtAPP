@@ -203,19 +203,19 @@ export default function LoansManager() {
 
   return (
     <div className="space-y-5">
-      {/* Summary Stat Cards — tinted icon chip style */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Summary Stat Cards */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {[
-          { label: 'Total Lent',    value: formatINR(summary.totalLent),   icon: '💸', color: 'apple-blue',   number: null },
-          { label: 'Active Loans',  value: `${summary.activeCount}`,        icon: '📋', color: 'apple-green',  number: null },
-          { label: 'Overdue',       value: `${summary.overdueCount}`,       icon: '⏰', color: summary.overdueCount > 0 ? 'apple-red' : 'apple-teal', number: null },
+          { label: 'Total Lent',   value: formatINR(summary.totalLent), icon: '💸', color: 'apple-blue'  },
+          { label: 'Active',       value: `${summary.activeCount}`,      icon: '📋', color: 'apple-green' },
+          { label: 'Overdue',      value: `${summary.overdueCount}`,     icon: '⏰', color: summary.overdueCount > 0 ? 'apple-red' : 'apple-teal' },
         ].map(({ label, value, icon, color }) => (
-          <div key={label} className="bg-card rounded-xl shadow-apple-sm p-4">
-            <div className={`w-9 h-9 rounded-[10px] bg-${color}/15 flex items-center justify-center mb-3 text-base`}>
+          <div key={label} className="bg-card rounded-xl shadow-apple-sm p-3 sm:p-4">
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-[10px] bg-${color}/15 flex items-center justify-center mb-2 sm:mb-3 text-sm sm:text-base`}>
               {icon}
             </div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
-            <p className={`text-2xl font-bold tabular-nums mt-0.5 text-${color}`}>{value}</p>
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-muted-foreground leading-tight">{label}</p>
+            <p className={`text-base sm:text-2xl font-bold tabular-nums mt-0.5 text-${color} leading-tight`}>{value}</p>
           </div>
         ))}
       </div>
@@ -228,15 +228,16 @@ export default function LoansManager() {
         >
           {showForm ? '✕ Cancel' : '+ Add Loan'}
         </button>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <div
-            onClick={() => setShowReturned(!showReturned)}
-            className={`relative w-[44px] h-[26px] rounded-full cursor-pointer transition-colors duration-300 ease-spring ${showReturned ? 'bg-apple-green' : 'bg-neutral-300 dark:bg-neutral-600'}`}
-          >
-            <span className={`absolute top-[2px] w-[22px] h-[22px] bg-white rounded-full shadow-apple-sm transition-transform duration-300 ease-spring ${showReturned ? 'translate-x-[19px]' : 'translate-x-[2px]'}`} />
+        <button
+          type="button"
+          onClick={() => setShowReturned(!showReturned)}
+          className="flex items-center gap-2.5 min-h-[44px] press-effect"
+        >
+          <div className={`relative w-[51px] h-[31px] rounded-full transition-colors duration-300 ease-spring shrink-0 ${showReturned ? 'bg-apple-green' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
+            <span className={`absolute top-[2px] w-[27px] h-[27px] bg-white rounded-full shadow-apple-sm transition-transform duration-300 ease-spring ${showReturned ? 'translate-x-[21px]' : 'translate-x-[2px]'}`} />
           </div>
-          <span className="text-muted-foreground text-sm select-none">Show returned</span>
-        </label>
+          <span className="text-sm text-muted-foreground select-none">Show returned</span>
+        </button>
       </div>
 
       {/* Add/Edit Form */}
@@ -350,19 +351,21 @@ export default function LoansManager() {
                 </div>
               </div>
 
-              {/* Text-only action buttons — iOS style */}
+              {/* Action buttons — 44px min touch target */}
               {!loan.isReturned && (
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/40">
+                <div className="flex items-center mt-3 pt-3 border-t border-border/40 -mx-1">
                   <button onClick={() => handleMarkReturned(loan)}
-                    className="press-effect text-sm font-semibold text-apple-green">
-                    ✓ Mark Returned
+                    className="press-effect flex-1 flex items-center justify-center gap-1.5 min-h-[44px] text-sm font-semibold text-apple-green">
+                    ✓ Returned
                   </button>
+                  <div className="w-px h-5 bg-border/60" />
                   <button onClick={() => handleEdit(loan)}
-                    className="press-effect text-sm font-semibold text-apple-blue">
+                    className="press-effect flex-1 flex items-center justify-center min-h-[44px] text-sm font-semibold text-apple-blue">
                     Edit
                   </button>
+                  <div className="w-px h-5 bg-border/60" />
                   <button onClick={() => handleDelete(loan)}
-                    className="press-effect text-sm font-semibold text-apple-red ml-auto">
+                    className="press-effect flex-1 flex items-center justify-center min-h-[44px] text-sm font-semibold text-apple-red">
                     Delete
                   </button>
                 </div>
