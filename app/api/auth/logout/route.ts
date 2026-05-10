@@ -19,10 +19,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Revoke all sessions for this user (logout everywhere)
+    // isSet:false because Prisma+MongoDB stores unset optional fields as absent, not null
     const revokedCount = await prisma.session.updateMany({
       where: {
         userId: auth.userId,
-        revokedAt: null, // Only revoke active sessions
+        revokedAt: { isSet: false },
       },
       data: { revokedAt: new Date() },
     });

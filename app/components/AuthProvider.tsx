@@ -42,37 +42,39 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const isRefreshing = useRef<boolean>(false);
 
   // Function to refresh access token with debouncing
-  const refreshAccessToken = useCallback(async (force = false): Promise<boolean> => {
+  // cookieOnly=true: skip storage lookup, send empty body — server uses httpOnly cookie (iOS recovery)
+  const refreshAccessToken = useCallback(async (force = false, cookieOnly = false): Promise<boolean> => {
     // Prevent concurrent refreshes
     if (isRefreshing.current) {
       log('Refresh already in progress, skipping');
       return true; // Assume success if already refreshing
     }
 
-    // Debounce: prevent refresh spam (unless forced)
+    // Debounce: prevent refresh spam (unless forced or doing cookie recovery)
     const now = Date.now();
-    if (!force && now - lastRefreshTime.current < MIN_REFRESH_INTERVAL) {
+    if (!force && !cookieOnly && now - lastRefreshTime.current < MIN_REFRESH_INTERVAL) {
       log('Too soon since last refresh, skipping');
       return true;
     }
 
     try {
       isRefreshing.current = true;
-      const refreshToken = await storage.getItem('refreshToken');
 
-      if (!refreshToken) {
-        log('No refresh token available');
-        return false;
+      let bodyToken: string | null = null;
+      if (!cookieOnly) {
+        bodyToken = await storage.getItem('refreshToken');
+        if (!bodyToken) {
+          log('No refresh token available');
+          return false;
+        }
       }
 
-      log('Refreshing access token...');
+      log(cookieOnly ? 'Cookie-only refresh (storage recovery)...' : 'Refreshing access token...');
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ refreshToken }),
+        headers: { 'Content-Type': 'application/json' },
+        body: cookieOnly ? '{}' : JSON.stringify({ refreshToken: bodyToken }),
       });
 
       if (response.ok) {
@@ -83,10 +85,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           lastRefreshTime.current = Date.now();
           log('Access token refreshed successfully');
 
-          // Store new refresh token for PWA compatibility (token rotation)
           if (data.refreshToken) {
             await storage.setItem('refreshToken', data.refreshToken);
-            log('Refresh token rotated');
+            log('Refresh token stored' + (cookieOnly ? ' (cookie recovery)' : ' (rotated)'));
           }
           return true;
         }
@@ -149,22 +150,36 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   }, []);
 
   useEffect(() => {
+    // Decode JWT exp claim without verifying signature (client-side only)
+    const getTokenExpiry = (token: string): number | null => {
+      try {
+        const [, payload] = token.split('.');
+        const { exp } = JSON.parse(atob(payload));
+        return typeof exp === 'number' ? exp : null;
+      } catch { return null; }
+    };
+
     // Function to check if user is authenticated
     const checkAuth = async () => {
       log('Checking authentication...');
 
-      const accessToken = await storage.getItem('accessToken');
+      let accessToken = await storage.getItem('accessToken');
       const refreshToken = await storage.getItem('refreshToken');
 
       // If no access token, try to refresh
       if (!accessToken) {
         if (!refreshToken) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          if (pathname !== '/') {
-            router.push('/');
+          // Storage may have been wiped by iOS 7-day eviction — try cookie-based recovery
+          log('Storage empty, attempting httpOnly cookie recovery...');
+          const recovered = await refreshAccessToken(true, true); // force + cookieOnly
+          if (!recovered) {
+            setIsAuthenticated(false);
+            setIsLoading(false);
+            if (pathname !== '/') router.push('/');
+            return;
           }
-          return;
+          // Recovery succeeded — tokens are now back in IndexedDB
+          accessToken = await storage.getItem('accessToken');
         } else {
           log('No access token, attempting refresh...');
           const refreshed = await refreshAccessToken(true); // Force refresh
@@ -181,8 +196,21 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         }
       }
 
+      // Offline guard: when there's no network, trust a recently-expired token
+      // rather than booting the user to the login screen
+      if (!navigator.onLine && accessToken) {
+        const exp = getTokenExpiry(accessToken);
+        const nowSec = Date.now() / 1000;
+        if (exp !== null && (nowSec < exp || nowSec - exp < 86400)) {
+          log('Offline: granting 24h grace period for expired token');
+          setIsAuthenticated(true);
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // If token exists, verify it's still valid
-      const isValid = await verifyToken(accessToken);
+      const isValid = await verifyToken(accessToken!);
 
       if (!isValid) {
         log('Access token invalid, attempting refresh...');
@@ -206,6 +234,17 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     // Check auth on mount and when pathname changes
     checkAuth();
+
+    // Storage keepalive: re-write access token once per day to reset iOS 7-day eviction clock.
+    // iOS only evicts storage that hasn't been *written* in 7 days, reads don't count.
+    const STORAGE_KEEPALIVE_MS = 24 * 60 * 60 * 1000;
+    const keepaliveId = setInterval(async () => {
+      const tok = await storage.getItem('accessToken');
+      if (tok) {
+        await storage.setItem('accessToken', tok);
+        log('Storage keepalive: re-wrote access token to reset iOS eviction clock');
+      }
+    }, STORAGE_KEEPALIVE_MS);
 
     // Set up automatic token refresh every 10 minutes
     const refreshInterval = setInterval(async () => {
@@ -301,6 +340,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
     // Clean up interval and event listeners on unmount
     return () => {
+      clearInterval(keepaliveId);
       clearInterval(refreshInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);

@@ -68,10 +68,11 @@ export async function POST(request: NextRequest) {
     extendThresholdDate.setDate(extendThresholdDate.getDate() + SESSION_EXTEND_THRESHOLD_DAYS);
 
     // Find sessions that need extension (expiring within threshold)
+    // isSet:false because Prisma+MongoDB stores unset optional fields as absent, not null
     const sessionsNeedingExtension = await prisma.session.findMany({
       where: {
         userId: payload.userId,
-        revokedAt: null,
+        revokedAt: { isSet: false },
         expiresAt: {
           gte: new Date(),
           lte: extendThresholdDate, // Expiring within threshold
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
     const updatedSessions = await prisma.session.updateMany({
       where: {
         userId: payload.userId,
-        revokedAt: null,
+        revokedAt: { isSet: false },
         expiresAt: { gte: new Date() },
       },
       data: {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { generateAccessToken, hashRefreshTokenForStorage } from '@/lib/auth';
-import { logAuditEvent, getClientIp, getSecureHeaders, withRateLimit } from '@/lib/middleware';
+import { generateAccessToken, generateRefreshToken, hashRefreshTokenForStorage, generateSessionExpiry } from '@/lib/auth';
+import { logAuditEvent, getClientIp, getSecureHeaders, withRateLimit, setSecureCookie } from '@/lib/middleware';
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REFRESHES = 30;
@@ -19,10 +19,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Accept refresh token from cookie (web) or body (iOS PWA fallback)
+    // Accept refresh token from body (normal) or httpOnly cookie (iOS PWA cookie-recovery path)
     const refreshTokenFromCookie = request.cookies.get('refreshToken')?.value;
     const body = await request.json().catch(() => ({}));
-    const refreshToken = refreshTokenFromCookie || body.refreshToken;
+    // body.refreshToken takes priority so normal flow isn't affected;
+    // cookie is the fallback for when IndexedDB was evicted by iOS
+    const refreshToken = body.refreshToken || refreshTokenFromCookie;
+
+    // Detect cookie-only recovery: no token in body → iOS storage was wiped
+    const isCookieRecovery = !body.refreshToken && !!refreshTokenFromCookie;
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -33,11 +38,12 @@ export async function POST(request: NextRequest) {
 
     const tokenHash = hashRefreshTokenForStorage(refreshToken);
 
-    // Find valid session — no rotation, session stays alive for its full 90-day window
+    // Find valid session — revokedAt uses isSet:false because Prisma+MongoDB stores
+    // unset optional fields as absent (not null), so `null` equality never matches.
     const session = await prisma.session.findFirst({
       where: {
         refreshToken: tokenHash,
-        revokedAt: null,
+        revokedAt: { isSet: false },
         expiresAt: { gte: new Date() },
       },
       include: { user: true },
@@ -60,15 +66,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Issue a new access token — same session/refresh token stays valid
+    // Issue a new access token
     const accessToken = generateAccessToken(session.userId);
 
-    await logAuditEvent(session.userId, 'TOKEN_REFRESH', 'auth', session.userId, {}, ip, userAgent);
+    // On cookie-recovery: rotate the refresh token so the client can re-populate IndexedDB.
+    // Without this the client has no token to store and would need cookie round-trips every open.
+    let newRefreshTokenPlain: string | undefined;
+    if (isCookieRecovery) {
+      newRefreshTokenPlain = generateRefreshToken();
+      const newHash = hashRefreshTokenForStorage(newRefreshTokenPlain);
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { refreshToken: newHash, refreshTokenHash: newHash, expiresAt: generateSessionExpiry() },
+      });
+    }
 
-    const response = NextResponse.json(
-      { success: true, accessToken },
+    await logAuditEvent(session.userId, 'TOKEN_REFRESH', 'auth', session.userId,
+      { cookieRecovery: isCookieRecovery }, ip, userAgent);
+
+    let response = NextResponse.json(
+      { success: true, accessToken, ...(newRefreshTokenPlain && { refreshToken: newRefreshTokenPlain }) },
       { status: 200 }
     );
+
+    if (newRefreshTokenPlain) {
+      // Update the httpOnly cookie with the rotated refresh token
+      response = setSecureCookie(response, 'refreshToken', newRefreshTokenPlain, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 90 * 24 * 60 * 60,
+      });
+    }
 
     Object.entries(getSecureHeaders()).forEach(([key, value]) => {
       response.headers.set(key, value);
