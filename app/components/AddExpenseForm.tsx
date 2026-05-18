@@ -91,6 +91,14 @@ function evaluateExpression(expr: string): { value: number | null; isExpression:
   }
 }
 
+// Calculator keypad layout: each entry is [label, value] (value is what gets appended)
+const KEYPAD: [string, string][][] = [
+  [['7','7'], ['8','8'], ['9','9'], ['⌫','⌫']],
+  [['4','4'], ['5','5'], ['6','6'], ['+','+']],
+  [['1','1'], ['2','2'], ['3','3'], ['−','-']],
+  [['.', '.'], ['0','0'], ['C','C'],  ['=','=']],
+];
+
 export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: AddExpenseFormProps) {
   const [amountInput, setAmountInput] = useState('');
   const [category, setCategory] = useState('Food');
@@ -109,17 +117,34 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
   const isExpression = expressionResult.isExpression;
   const expressionError = expressionResult.error;
 
-  const convertExpressionToResult = useCallback(() => {
-    if (isExpression && calculatedAmount !== null && !expressionError) {
-      setAmountInput(calculatedAmount.toString());
+  const handleKeypad = useCallback((value: string) => {
+    if (value === '⌫') {
+      setAmountInput(prev => prev.slice(0, -1));
+      return;
     }
-  }, [isExpression, calculatedAmount, expressionError]);
-
-  const handleAmountBlur = useCallback(() => convertExpressionToResult(), [convertExpressionToResult]);
-
-  const handleAmountKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === '=' || e.key === 'Enter') { e.preventDefault(); convertExpressionToResult(); }
-  }, [convertExpressionToResult]);
+    if (value === 'C') {
+      setAmountInput('');
+      return;
+    }
+    if (value === '=') {
+      setAmountInput(prev => {
+        const result = evaluateExpression(prev);
+        if (result.value !== null && !result.error) return result.value.toString();
+        return prev;
+      });
+      return;
+    }
+    // Prevent two consecutive operators
+    const lastChar = amountInput.slice(-1);
+    const isOperator = (c: string) => ['+', '-', '*', '/'].includes(c);
+    if (isOperator(value) && (isOperator(lastChar) || lastChar === '')) return;
+    // Prevent duplicate decimal in the current number segment
+    if (value === '.') {
+      const segments = amountInput.split(/[+\-*/]/);
+      if (segments[segments.length - 1].includes('.')) return;
+    }
+    setAmountInput(prev => prev + value);
+  }, [amountInput]);
 
   const getAISuggestion = useCallback(async (description: string) => {
     if (!description || description.trim().length < 3) { setAiSuggestion(''); return; }
@@ -237,8 +262,8 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
           </div>
         )}
 
-        {/* Calculator-style amount display — scaled for mobile */}
-        <div className="px-5 pt-5 pb-2 text-right">
+        {/* Amount display */}
+        <div className="px-5 pt-5 pb-3 text-right">
           <div className={`text-[36px] sm:text-[48px] font-thin tabular-nums leading-none tracking-tight transition-colors ${
             expressionError ? 'text-apple-red' : 'text-foreground'
           }`}>
@@ -252,30 +277,34 @@ export default function AddExpenseForm({ onSuccess, budgetType = 'personal' }: A
           )}
         </div>
 
-        {/* Amount input — 48px tall for easy mobile touch */}
-        <div className="px-5 pb-4">
-          <input
-            type="text"
-            inputMode="decimal"
-            pattern="[0-9+\-*/().\s]*"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            enterKeyHint="done"
-            value={amountInput}
-            onChange={(e) => setAmountInput(e.target.value)}
-            onKeyDown={handleAmountKeyDown}
-            onBlur={handleAmountBlur}
-            required
-            className="w-full h-12 rounded-xl bg-secondary/60 border-0 px-4 text-base text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-apple-blue/40 transition-all duration-250"
-            placeholder="Amount (e.g. 130+140)"
-          />
-          {!amountInput && (
-            <p className="text-xs text-muted-foreground mt-1.5 px-1">
-              Tip: math like 100+50*2, press = to calculate
-            </p>
-          )}
+        {/* Built-in calculator keypad — avoids iOS system keyboard entirely */}
+        <div className="px-4 pb-4 grid grid-cols-4 gap-2">
+          {KEYPAD.flat().map(([label, value]) => {
+            const isOperator = ['+', '−', '='].includes(label);
+            const isClear = label === 'C';
+            const isBackspace = label === '⌫';
+            const isEquals = label === '=';
+            return (
+              <button
+                key={label}
+                type="button"
+                onPointerDown={(e) => { e.preventDefault(); handleKeypad(value); }}
+                className={`press-effect h-14 rounded-2xl text-[22px] font-medium flex items-center justify-center select-none transition-colors active:scale-95
+                  ${isEquals
+                    ? 'bg-apple-blue text-white shadow-apple-sm'
+                    : isOperator
+                    ? 'bg-apple-blue/15 text-apple-blue'
+                    : isClear
+                    ? 'bg-apple-red/15 text-apple-red'
+                    : isBackspace
+                    ? 'bg-secondary text-muted-foreground'
+                    : 'bg-secondary text-foreground'
+                  }`}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Category pills — bigger touch targets on mobile */}
